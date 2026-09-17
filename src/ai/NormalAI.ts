@@ -35,3 +35,6 @@ export class NormalAI {
         return dice;
     }
 }
+
+
+console.log ("taking turn")
