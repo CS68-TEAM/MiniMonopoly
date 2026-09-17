@@ -37,4 +37,3 @@ export class NormalAI {
 }
 
 
-console.log ("taking turn")
