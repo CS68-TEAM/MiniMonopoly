@@ -8,7 +8,6 @@ import { EasyAI } from "../src/ai/EasyAI";
 import { NormalAI } from "../src/ai/NormalAI";
 import { HardAI } from "../src/ai/HardAI";
 
-//เทส 123
 const makePlayers = (): [Player, Player, Player, Player] => [
     new Player("human", "Player", "Human"),
     new Player("bot1", "Bot 1", "AI Easy"),
