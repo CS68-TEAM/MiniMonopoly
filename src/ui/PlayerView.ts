@@ -8,11 +8,11 @@ export const PLAYER_COLORS: Record<string, [string, string]> = {
     hard: ["{red-fg}", "{/red-fg}"],
 };
 
-function centerPad(s: string, w: number): string {
-    const total = Math.max(0, w - s.length);
-    const left = Math.floor(total / 2);
-    const right = total - left;
-    return " ".repeat(left) + s + " ".repeat(right);
+function centerPad(text: string, width: number): string {
+    const totalPadding = Math.max(0, width - text.length);
+    const leftPadding = Math.floor(totalPadding / 2);
+    const rightPadding = totalPadding - leftPadding;
+    return " ".repeat(leftPadding) + text + " ".repeat(rightPadding);
 }
 
 export class PlayerView {
@@ -27,38 +27,39 @@ export class PlayerView {
         padding: { left: 1, right: 1 },
     });
 
-    public render(players: Player[], currentId: string): void {
-        const nameWidth = Math.max("Name".length, ...players.map(p => p.name.length));
-        const moneyWidth = Math.max("Money".length, ...players.map(p => `$${p.money.toLocaleString()}`.length));
-        const propWidth = Math.max("Property".length, ...players.map(p => String(p.properties.length).length));
-        const header = `  ${"Name".padEnd(nameWidth)} | ${"Money".padEnd(moneyWidth)} | ${centerPad("Property", propWidth)} | Status`;
+    public render(players: Player[], currentPlayerId: string): void {
+        const nameColumnWidth = Math.max("Name".length, ...players.map(p => p.name.length));
+        const moneyColumnWidth = Math.max("Money".length, ...players.map(p => `$${p.money.toLocaleString()}`.length));
+        const propertyColumnWidth = Math.max("Property".length, ...players.map(p => String(p.properties.length).length));
 
-        const rows = players.map(p => {
-            const isCurrent = p.id === currentId;
-            const [colorOpen, colorClose] = PLAYER_COLORS[p.id] ?? ["{red-fg}", "{/red-fg}"];
-            const marker = isCurrent ? `${colorOpen}{bold}>{/bold}${colorClose}` : " ";
+        const header = `  ${"Name".padEnd(nameColumnWidth)} | ${"Money".padEnd(moneyColumnWidth)} | ${centerPad("Property", propertyColumnWidth)} | Status`;
 
-            let badge: string;
-            if (p.status === "bankrupt") {
-                badge = "{red-fg}{bold}[BANKRUPT]{/bold}{/red-fg}";
-            } else if (p.status === "jailed") {
-                badge = "{magenta-fg}{bold}[JAIL]{/bold}{/magenta-fg}";
-            } else if (isCurrent) {
-                badge = `${colorOpen}{bold}[ACTIVE]{/bold}${colorClose}`;
+        const rows = players.map(player => {
+            const isCurrentPlayer = player.id === currentPlayerId;
+            const [colorOpen, colorClose] = PLAYER_COLORS[player.id] ?? ["{red-fg}", "{/red-fg}"];
+            const turnMarker = isCurrentPlayer ? `${colorOpen}{bold}>{/bold}${colorClose}` : " ";
+
+            let statusBadge: string;
+            if (player.status === "bankrupt") {
+                statusBadge = "{red-fg}{bold}[BANKRUPT]{/bold}{/red-fg}";
+            } else if (player.status === "jailed") {
+                statusBadge = "{magenta-fg}{bold}[JAIL]{/bold}{/magenta-fg}";
+            } else if (isCurrentPlayer) {
+                statusBadge = `${colorOpen}{bold}[ACTIVE]{/bold}${colorClose}`;
             } else {
-                badge = "{white-fg}[WAITING]{/white-fg}";
+                statusBadge = "{white-fg}[WAITING]{/white-fg}";
             }
 
-            const namePlain = p.name.padEnd(nameWidth);
-            const name = `${colorOpen}${namePlain}${colorClose}`;
+            const paddedName = player.name.padEnd(nameColumnWidth);
+            const nameCell = `${colorOpen}${paddedName}${colorClose}`;
 
-            const moneyPlain = `$${p.money.toLocaleString()}`.padEnd(moneyWidth);
-            const money = p.money < 0 ? `{red-fg}{bold}${moneyPlain}{/bold}{/red-fg}` : `{green-fg}${moneyPlain}{/green-fg}`;
+            const paddedMoney = `$${player.money.toLocaleString()}`.padEnd(moneyColumnWidth);
+            const moneyCell = player.money < 0 ? `{red-fg}{bold}${paddedMoney}{/bold}{/red-fg}` : `{green-fg}${paddedMoney}{/green-fg}`;
 
-            const propPlain = centerPad(String(p.properties.length), propWidth);
-            const properties = `{cyan-fg}${propPlain}{/cyan-fg}`;
+            const paddedPropertyCount = centerPad(String(player.properties.length), propertyColumnWidth);
+            const propertyCell = `{cyan-fg}${paddedPropertyCount}{/cyan-fg}`;
 
-            return `${marker} ${name} | ${money} | ${properties} | ${badge}`;
+            return `${turnMarker} ${nameCell} | ${moneyCell} | ${propertyCell} | ${statusBadge}`;
         });
 
         this.box.setContent([header, ...rows].join("\n"));

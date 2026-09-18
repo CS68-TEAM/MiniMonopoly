@@ -18,6 +18,7 @@ import { writeSave, readSave } from "../save";
 const SAVE_FILE = "save.json";
 const MOVE_STEP_DELAY_MS = 200;
 const PAUSE_AFTER_DICE_MS = 300;
+const AI_TURN_DELAY_MS = 600;
 
 export class App {
     private readonly screen: blessed.Widgets.Screen;
@@ -57,38 +58,53 @@ export class App {
                 process.stdout.write(`\x1b[8;${rows};${cols}t`);
             }
         } catch {
-
+            
         }
     }
 
-    public run(): void { this.screen.render(); }
+    public run(): void {
+        this.screen.render();
+    }
 
     private showStartMenu(save: SaveData | null): void {
         const hasSave = save !== null;
 
-        const contentLines = ["", "{green-fg}{bold}1{/bold}  New Game{/green-fg}",];
+        const menuLines = ["", "{green-fg}{bold}1{/bold}  New Game{/green-fg}"];
         if (hasSave) {
             const savedAt = new Date(save!.savedAt).toLocaleString("th-TH");
-            contentLines.push(`{cyan-fg}{bold}2{/bold}  Resume Game{/cyan-fg}   {white-fg}(${savedAt}){/white-fg}`);
+            menuLines.push(`{cyan-fg}{bold}2{/bold}  Resume Game{/cyan-fg}   {white-fg}(${savedAt}){/white-fg}`);
         } else {
-            contentLines.push("{gray-fg}2  Resume Game   (no saved game){/gray-fg}");
+            menuLines.push("{gray-fg}2  Resume Game   (no saved game){/gray-fg}");
         }
-        contentLines.push("");
-        contentLines.push("{red-fg}{bold}Q{/bold} Quit{/red-fg}");
+        menuLines.push("");
+        menuLines.push("{red-fg}{bold}Q{/bold} Quit{/red-fg}");
 
-        const box = blessed.box({ top: "center", left: "center", width: 54, height: 15, border: { type: "line" }, label: " Mini Monopoly ", tags: true, align: "left" as const, valign: "middle" as const, padding: { left: 3, right: 2, top: 0, bottom: 0 }, style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } }, content: contentLines.join("\n") });
-        this.screen.append(box);
+        const menuBox = blessed.box({
+            top: "center",
+            left: "center",
+            width: 54,
+            height: 15,
+            border: { type: "line" },
+            label: " Mini Monopoly ",
+            tags: true,
+            align: "left" as const,
+            valign: "middle" as const,
+            padding: { left: 3, right: 2, top: 0, bottom: 0 },
+            style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } },
+            content: menuLines.join("\n"),
+        });
+        this.screen.append(menuBox);
         this.screen.render();
 
         const startNewGame = () => {
-            this.screen.remove(box);
+            this.screen.remove(menuBox);
             this.startGame();
         };
         this.screen.onceKey("1", startNewGame);
 
         if (hasSave) {
             const resumeGame = () => {
-                this.screen.remove(box);
+                this.screen.remove(menuBox);
                 this.loadGame(save!);
             };
             this.screen.onceKey("2", resumeGame);
@@ -100,25 +116,30 @@ export class App {
 
     private loadGame(save: SaveData): void {
         const savedPlayers = save.players as SavedPlayerData[];
-        const players = savedPlayers.map(sp => {
-            const player = new Player(sp.id, sp.name, sp.kind, sp.money);
-            player.position = sp.position;
-            player.status = sp.status;
-            player.purchaseCount = sp.purchaseCount ?? 0;
-            player.takeoverCount = sp.takeoverCount ?? 0;
+        const players = savedPlayers.map(savedPlayer => {
+            const player = new Player(savedPlayer.id, savedPlayer.name, savedPlayer.kind, savedPlayer.money);
+            player.position = savedPlayer.position;
+            player.status = savedPlayer.status;
+            player.purchaseCount = savedPlayer.purchaseCount ?? 0;
+            player.takeoverCount = savedPlayer.takeoverCount ?? 0;
             return player;
         });
 
         this.game = new Game(players, message => this.gameLog.add(message));
         this.game.onChance = (player, card) => this.showChancePopup(player.name, card);
 
-        const savedIndex = players.findIndex(p => p.id === save.currentPlayer);
-        const humanIndex = players.findIndex(p => p.id === "human");
-        this.game.currentPlayerIndex = (savedIndex >= 0 && players[savedIndex]!.id === "human") ? savedIndex : humanIndex >= 0 ? humanIndex : 0;
+        const savedCurrentIndex = players.findIndex(player => player.id === save.currentPlayer);
+        const humanIndex = players.findIndex(player => player.id === "human");
+        this.game.currentPlayerIndex =
+            savedCurrentIndex >= 0 && players[savedCurrentIndex]!.id === "human"
+                ? savedCurrentIndex
+                : humanIndex >= 0
+                    ? humanIndex
+                    : 0;
 
-        for (const sp of savedPlayers) {
-            const player = players.find(p => p.id === sp.id)!;
-            for (const propertyId of sp.properties) {
+        for (const savedPlayer of savedPlayers) {
+            const player = players.find(p => p.id === savedPlayer.id)!;
+            for (const propertyId of savedPlayer.properties) {
                 const property = this.game.board.findPropertyById(propertyId);
                 if (!property) continue;
                 property.owner = { id: player.id, name: player.name };
@@ -127,15 +148,15 @@ export class App {
         }
 
         this.ais = [];
-        for (const p of players) {
-            if (p.id === "human")
+        for (const player of players) {
+            if (player.id === "human")
                 continue;
-            if (p.kind === "AI Easy")
-                this.ais.push(new EasyAI(p));
-            else if (p.kind === "AI Normal")
-                this.ais.push(new NormalAI(p));
+            if (player.kind === "AI Easy")
+                this.ais.push(new EasyAI(player));
+            else if (player.kind === "AI Normal")
+                this.ais.push(new NormalAI(player));
             else
-                this.ais.push(new HardAI(p));
+                this.ais.push(new HardAI(player));
         }
 
         this.layout();
@@ -208,6 +229,7 @@ export class App {
     private bindKeys(): void {
         this.screen.key(["q", "C-c", "escape"], () => process.exit(0));
         this.screen.key(["enter", "r"], () => { void this.doRoll(); });
+
         this.screen.key(["b"], () => {
             if (!this.busy && this.game.currentPlayer.id === "human" && this.game.status === "playing") {
                 this.game.buy(this.game.currentPlayer);
@@ -215,12 +237,14 @@ export class App {
                 void this.autoSave();
             }
         });
+
         this.screen.key(["s"], () => {
             if (!this.busy && this.game.currentPlayer.id === "human" && this.game.status === "playing") {
                 this.sellCheapest();
                 void this.autoSave();
             }
         });
+
         this.screen.key(["t"], () => {
             if (this.busy || this.game.currentPlayer.id !== "human" || this.game.status !== "playing") return;
             const tile = this.game.board.getTile(this.game.currentPlayer.position);
@@ -270,7 +294,7 @@ export class App {
                 this.game.nextTurn();
                 continue;
             }
-            await new Promise(resolve => setTimeout(resolve, 600));
+            await new Promise(resolve => setTimeout(resolve, AI_TURN_DELAY_MS));
 
             const aiPlayer = currentAi.player;
             const aiFromPos = aiPlayer.position;
@@ -306,29 +330,45 @@ export class App {
 
     private showDebtPrompt(): Promise<void> {
         return new Promise(resolve => {
-            const list = blessed.list({ top: "center", left: "center", width: "50%", height: "50%", border: { type: "line" }, label: " Not Enough Cash ", tags: true, keys: true, mouse: true, style: { border: { fg: "red" }, label: { fg: "red", bold: true }, selected: { bg: "red", fg: "white", bold: true } } as any,});
+            const debtList = blessed.list({
+                top: "center",
+                left: "center",
+                width: "50%",
+                height: "50%",
+                border: { type: "line" },
+                label: " Not Enough Cash ",
+                tags: true,
+                keys: true,
+                mouse: true,
+                style: {
+                    border: { fg: "red" },
+                    label: { fg: "red", bold: true },
+                    selected: { bg: "red", fg: "white", bold: true },
+                } as any,
+            });
+
             const refresh = () => {
-                const p = this.game.currentPlayer;
-                const owed = Math.max(0, -p.money);
-                list.setLabel(` You owe $${owed} — sell a property `);
-                const items = p.properties.map(prop => `${prop.name}  —  sell for $${Math.floor(prop.price * SELL_RATE)}`);
+                const player = this.game.currentPlayer;
+                const owed = Math.max(0, -player.money);
+                debtList.setLabel(` You owe $${owed} — sell a property `);
+                const items = player.properties.map(property => `${property.name}  —  sell for $${Math.floor(property.price * SELL_RATE)}`);
                 items.push("{red-fg}{bold}[ Declare Bankruptcy ]{/bold}{/red-fg}");
-                list.setItems(items as any);
+                debtList.setItems(items as any);
                 this.screen.render();
             };
 
-            this.screen.append(list);
+            this.screen.append(debtList);
             refresh();
-            list.focus();
+            debtList.focus();
             this.screen.render();
 
-            list.on("select", (_item: unknown, index: number) => {
-                const p = this.game.currentPlayer;
-                if (index >= p.properties.length) {
+            debtList.on("select", (_item: unknown, index: number) => {
+                const player = this.game.currentPlayer;
+                if (index >= player.properties.length) {
                     this.game.declareBankruptcy();
                 } else {
-                    const prop = p.properties[index]!;
-                    this.game.sellForDebt(prop.id);
+                    const property = player.properties[index]!;
+                    this.game.sellForDebt(property.id);
                 }
                 this.render();
                 void this.autoSave();
@@ -336,7 +376,7 @@ export class App {
                 if (this.game.pendingDebt) {
                     refresh();
                 } else {
-                    this.screen.remove(list);
+                    this.screen.remove(debtList);
                     this.screen.render();
                     resolve();
                 }
@@ -346,13 +386,31 @@ export class App {
 
     private showPurchasePrompt(property: Property): Promise<void> {
         return new Promise(resolve => {
-            const box = blessed.box({top: "center",left: "center",width: "40%",height: "30%",border: { type: "line" },label: " Buy Property? ",tags: true,align: "center" as const,valign: "middle" as const,style: { border: { fg: "yellow" }, label: { fg: "yellow", bold: true } },content: [ `{bold}Property: ${property.name}{/bold}`, `Price: $${property.price}`, `Rent: $${property.rent}`, "", "{green-fg}{bold}[B]{/bold}{/green-fg} Buy    {red-fg}{bold}[N]{/bold}{/red-fg} Skip" ].join("\n"),});
-            this.screen.append(box);
+            const purchaseBox = blessed.box({
+                top: "center",
+                left: "center",
+                width: "40%",
+                height: "30%",
+                border: { type: "line" },
+                label: " Buy Property? ",
+                tags: true,
+                align: "center" as const,
+                valign: "middle" as const,
+                style: { border: { fg: "yellow" }, label: { fg: "yellow", bold: true } },
+                content: [
+                    `{bold}Property: ${property.name}{/bold}`,
+                    `Price: $${property.price}`,
+                    `Rent: $${property.rent}`,
+                    "",
+                    "{green-fg}{bold}[B]{/bold}{/green-fg} Buy    {red-fg}{bold}[N]{/bold}{/red-fg} Skip",
+                ].join("\n"),
+            });
+            this.screen.append(purchaseBox);
             this.screen.render();
 
             const finish = (buy: boolean) => {
                 this.game.decidePurchase(buy);
-                this.screen.remove(box);
+                this.screen.remove(purchaseBox);
                 this.render();
                 this.screen.render();
                 resolve();
@@ -366,13 +424,34 @@ export class App {
         return new Promise(resolve => {
             const offer = Math.ceil(property.price * TAKEOVER_MULTIPLIER);
             const offerPercent = Math.round(TAKEOVER_MULTIPLIER * 100);
-            const box = blessed.box({top: "center",left: "center",width: "44%",height: "32%",border: { type: "line" },label: " Take Over? ",tags: true,align: "center" as const,valign: "middle" as const,style: { border: { fg: "magenta" }, label: { fg: "magenta", bold: true } },content: [ `{bold}Property: ${property.name}{/bold}`, `Current owner: ${property.owner!.name}`, `Original price: $${property.price}`, `Rent: $${property.rent}`, "", `{magenta-fg}{bold}Offer: $${offer} (${offerPercent}%){/bold}{/magenta-fg}`, "", "{green-fg}{bold}[T]{/bold}{/green-fg} Confirm    {red-fg}{bold}[N]{/bold}{/red-fg} Cancel" ].join("\n"),});
-            this.screen.append(box);
+            const takeoverBox = blessed.box({
+                top: "center",
+                left: "center",
+                width: "44%",
+                height: "32%",
+                border: { type: "line" },
+                label: " Take Over? ",
+                tags: true,
+                align: "center" as const,
+                valign: "middle" as const,
+                style: { border: { fg: "magenta" }, label: { fg: "magenta", bold: true } },
+                content: [
+                    `{bold}Property: ${property.name}{/bold}`,
+                    `Current owner: ${property.owner!.name}`,
+                    `Original price: $${property.price}`,
+                    `Rent: $${property.rent}`,
+                    "",
+                    `{magenta-fg}{bold}Offer: $${offer} (${offerPercent}%){/bold}{/magenta-fg}`,
+                    "",
+                    "{green-fg}{bold}[T]{/bold}{/green-fg} Confirm    {red-fg}{bold}[N]{/bold}{/red-fg} Cancel",
+                ].join("\n"),
+            });
+            this.screen.append(takeoverBox);
             this.screen.render();
 
             const finish = (confirm: boolean) => {
                 this.game.decideTakeover(confirm);
-                this.screen.remove(box);
+                this.screen.remove(takeoverBox);
                 this.render();
                 this.screen.render();
                 resolve();
@@ -384,52 +463,76 @@ export class App {
 
     private showJailPrompt(player: Player): Promise<boolean> {
         return new Promise(resolve => {
-            const canAfford = player.money >= JAIL_BAIL_AMOUNT;
-            const box = blessed.box({
-                top: "center", left: "center", width: "42%", height: "30%",
-                border: { type: "line" }, label: " In Jail ", tags: true,
-                align: "center" as const, valign: "middle" as const,
+            const canAffordBail = player.money >= JAIL_BAIL_AMOUNT;
+            const jailBox = blessed.box({
+                top: "center",
+                left: "center",
+                width: "42%",
+                height: "30%",
+                border: { type: "line" },
+                label: " In Jail ",
+                tags: true,
+                align: "center" as const,
+                valign: "middle" as const,
                 style: { border: { fg: "magenta" }, label: { fg: "magenta", bold: true } },
                 content: [
                     `{bold}{magenta-fg}You are in Jail!{/magenta-fg}{/bold}`,
                     "",
                     `Bail: {yellow-fg}{bold}$${JAIL_BAIL_AMOUNT}{/bold}{/yellow-fg}`,
-                    canAfford ? "" : "{red-fg}Not enough cash to pay bail{/red-fg}",
+                    canAffordBail ? "" : "{red-fg}Not enough cash to pay bail{/red-fg}",
                     "",
-                    canAfford
+                    canAffordBail
                         ? "{green-fg}{bold}[B]{/bold}{/green-fg} Pay Bail    {red-fg}{bold}[N]{/bold}{/red-fg} Skip Turn"
                         : "{red-fg}{bold}[N]{/bold}{/red-fg} Skip Turn",
                 ].join("\n"),
             });
-            this.screen.append(box);
+            this.screen.append(jailBox);
             this.screen.render();
 
             const finish = (pay: boolean) => {
-                this.screen.remove(box);
+                this.screen.remove(jailBox);
                 this.screen.render();
                 resolve(pay);
             };
-            if (canAfford) this.screen.onceKey("b", () => finish(true));
+            if (canAffordBail) this.screen.onceKey("b", () => finish(true));
             this.screen.onceKey("n", () => finish(false));
         });
     }
 
     private showChancePopup(playerName: string, card: ChanceCard): void {
-        const box = blessed.box({ top: 'center', left: 'center', width: '38%', height: '28%', border: { type: 'line' }, label: ' Chance ', tags: true, align: 'center' as const, valign: 'middle' as const, style: { border: { fg: 'blue' }, label: { fg: 'blue', bold: true } }, content: [ `{bold}{blue-fg}${playerName}{/blue-fg}{/bold}`, '', `{bold}{yellow-fg}${card.title}{/yellow-fg}{/bold}`, `${card.description}` ].join('\n')});
-        this.screen.append(box);
+        const chanceBox = blessed.box({
+            top: "center",
+            left: "center",
+            width: "38%",
+            height: "28%",
+            border: { type: "line" },
+            label: " Chance ",
+            tags: true,
+            align: "center" as const,
+            valign: "middle" as const,
+            style: { border: { fg: "blue" }, label: { fg: "blue", bold: true } },
+            content: [
+                `{bold}{blue-fg}${playerName}{/blue-fg}{/bold}`,
+                "",
+                `{bold}{yellow-fg}${card.title}{/yellow-fg}{/bold}`,
+                `${card.description}`,
+            ].join("\n"),
+        });
+        this.screen.append(chanceBox);
         this.screen.render();
-        const duration = 1500 + Math.random() * 1500;
+
+        const popupDurationMs = 1500 + Math.random() * 1500;
         setTimeout(() => {
-            this.screen.remove(box);
+            this.screen.remove(chanceBox);
             this.screen.render();
-        }, duration);
+        }, popupDurationMs);
     }
 
     private sellCheapest(): void {
-        const p = this.game.currentPlayer;
-        if (p.properties.length === 0) return;
-        const cheapest = [...p.properties].sort((a, b) => a.price - b.price)[0]!;
-        this.game.sellProperty(p, cheapest.id);
+        const player = this.game.currentPlayer;
+        if (player.properties.length === 0) return;
+        const cheapestProperty = [...player.properties].sort((a, b) => a.price - b.price)[0]!;
+        this.game.sellProperty(player, cheapestProperty.id);
         this.render();
     }
 
@@ -443,9 +546,16 @@ export class App {
     private serialize(): SaveData {
         return {
             currentPlayer: this.game.currentPlayer.id,
-            players: this.game.players.map((p): SavedPlayerData => ({
-                id: p.id, name: p.name, kind: p.kind, money: p.money,
-                position: p.position, status: p.status, properties: p.properties.map(x => x.id), purchaseCount: p.purchaseCount, takeoverCount: p.takeoverCount,
+            players: this.game.players.map((player): SavedPlayerData => ({
+                id: player.id,
+                name: player.name,
+                kind: player.kind,
+                money: player.money,
+                position: player.position,
+                status: player.status,
+                properties: player.properties.map(property => property.id),
+                purchaseCount: player.purchaseCount,
+                takeoverCount: player.takeoverCount,
             })),
             savedAt: new Date().toISOString(),
         };
