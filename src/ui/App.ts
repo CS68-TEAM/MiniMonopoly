@@ -78,7 +78,7 @@ export class App {
             const savedAt = new Date(save!.savedAt).toLocaleString("th-TH");
             menuLines.push(`{cyan-fg}{bold}2{/bold}  Resume Game{/cyan-fg}   {white-fg}(${savedAt}){/white-fg}`);
         } else {
-            menuLines.push("{gray-fg}2  Resume Game   (no saved game){/gray-fg}");
+            menuLines.push("{white-fg}2  Resume Game   (no saved game){/white-fg}");
         }
         menuLines.push("");
         menuLines.push("{red-fg}{bold}Q{/bold} Quit{/red-fg}");

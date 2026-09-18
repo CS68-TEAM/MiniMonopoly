@@ -73,11 +73,7 @@ export class DiceView {
         }
         lines.push(frameBottom);
         lines.push("");
-        lines.push(
-            this.isSettled
-                ? `{bold}{green-fg}+ Rolled : ${this.dieValue}{/green-fg}{/bold}`
-                : `{white-fg}Rolling…{/white-fg}`,
-        );
+        lines.push(this.isSettled ? `{bold}{green-fg}+ Rolled : ${this.dieValue}{/green-fg}{/bold}` : `{white-fg}Rolling…{/white-fg}`,);
         this.box.setContent(lines.join("\n"));
     }
 }
