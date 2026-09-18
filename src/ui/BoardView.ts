@@ -94,10 +94,7 @@ function centerTagged(taggedText: string, width: number): string {
     return " ".repeat(leftPadding) + taggedText + " ".repeat(rightPadding);
 }
 
-function renderTileName(
-    tile: { name: string; type: string; property?: { owner?: { id: string } | null } },
-    width: number,
-): string {
+function renderTileName( tile: { name: string; type: string; property?: { owner?: { id: string } | null } }, width: number ): string {
     const ownerId = tile.type === "property" ? tile.property?.owner?.id : undefined;
     if (!ownerId) return centerPlain(tile.name, width);
     const [colorOpen, colorClose] = PLAYER_COLORS[ownerId] ?? ["{white-fg}", "{/white-fg}"];
