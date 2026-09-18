@@ -1,5 +1,15 @@
 import blessed from "blessed";
 
+const CONTROL_HINTS = [
+    "{bold}{yellow-fg}ENTER{/yellow-fg} = ROLL{/bold}",
+    "{bold}{green-fg}B{/green-fg} = BUY{/bold}",
+    "{bold}{red-fg}S{/red-fg} = SELL{/bold}",
+    "{bold}{magenta-fg}T{/magenta-fg} = TAKEOVER{/bold}",
+    "{bold}{cyan-fg}Q{/cyan-fg} = QUIT{/bold}",
+];
+
+const CONTROL_HINT_SEPARATOR = "   │   ";
+
 export class ActionMenu {
     public readonly box = blessed.box({
         label: " Controls ",
@@ -11,12 +21,6 @@ export class ActionMenu {
         tags: true,
         align: "center" as const,
         valign: "middle" as const,
-        content: [
-            "{bold}{yellow-fg}ENTER{/yellow-fg} = ROLL{/bold}",
-            "{bold}{green-fg}B{/green-fg} = BUY{/bold}",
-            "{bold}{red-fg}S{/red-fg} = SELL{/bold}",
-            "{bold}{magenta-fg}T{/magenta-fg} = TAKEOVER{/bold}",
-            "{bold}{cyan-fg}Q{/cyan-fg} = QUIT{/bold}",
-        ].join("   │   "),
+        content: CONTROL_HINTS.join(CONTROL_HINT_SEPARATOR),
     });
 }

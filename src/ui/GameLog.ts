@@ -1,6 +1,6 @@
 import blessed from "blessed";
 
-const CATEGORIES: { match: RegExp; icon: string; color: string }[] = [
+const LOG_CATEGORIES: { match: RegExp; icon: string; color: string }[] = [
     { match: /wins the game/i, icon: "★", color: "yellow" },
     { match: /is BANKRUPT/i, icon: "X", color: "red" },
     { match: /rent/i, icon: "$", color: "yellow" },
@@ -12,7 +12,10 @@ const CATEGORIES: { match: RegExp; icon: string; color: string }[] = [
     { match: /rolled/i, icon: "*", color: "cyan" },
     { match: /passed START/i, icon: "+", color: "green" },
 ];
-const DEFAULT_CATEGORY = { icon: "-", color: "white" };
+const DEFAULT_LOG_CATEGORY = { icon: "-", color: "white" };
+
+const MAX_LOG_LINES = 80;
+const LOG_ICON_PREFIX_WIDTH = 4;
 
 export class GameLog {
     public readonly box = blessed.box({
@@ -31,7 +34,7 @@ export class GameLog {
         padding: { left: 1, right: 1 },
     });
 
-    private readonly messages: string[] = [];
+    private readonly logLines: string[] = [];
 
     constructor() {
         this.box.on("attach", () => {
@@ -42,25 +45,25 @@ export class GameLog {
     }
 
     private contentWidth(): number {
-        const w = typeof this.box.width === "number" ? this.box.width : 40;
-        return Math.max(10, w - 4);
+        const boxWidth = typeof this.box.width === "number" ? this.box.width : 40;
+        return Math.max(10, boxWidth - 4);
     }
 
     public add(message: string): void {
-        const category = CATEGORIES.find(c => c.match.test(message)) ?? DEFAULT_CATEGORY;
-        const prefixWidth = 4;
-        const budget = Math.max(0, this.contentWidth() - prefixWidth);
-        const trimmed = message.length > budget ? message.slice(0, Math.max(0, budget - 1)) + "…" : message;
-        const line = `${category.icon} | {${category.color}-fg}${trimmed}{/${category.color}-fg}`;
-        this.messages.push(line);
-        if (this.messages.length > 80) this.messages.shift();
+        const category = LOG_CATEGORIES.find(c => c.match.test(message)) ?? DEFAULT_LOG_CATEGORY;
+        const maxMessageWidth = Math.max(0, this.contentWidth() - LOG_ICON_PREFIX_WIDTH);
+        const trimmedMessage = message.length > maxMessageWidth ? message.slice(0, Math.max(0, maxMessageWidth - 1)) + "…" : message;
+        const line = `${category.icon} | {${category.color}-fg}${trimmedMessage}{/${category.color}-fg}`;
 
-        this.box.setContent(this.messages.join("\n"));
+        this.logLines.push(line);
+        if (this.logLines.length > MAX_LOG_LINES) this.logLines.shift();
+
+        this.box.setContent(this.logLines.join("\n"));
         this.box.setScrollPerc(100);
     }
 
-    public scroll(lines: number): void {
-        this.box.scroll(lines);
+    public scroll(lineDelta: number): void {
+        this.box.scroll(lineDelta);
         this.box.screen.render();
     }
 }
