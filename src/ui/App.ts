@@ -238,8 +238,8 @@ export class App {
 
         this.screen.key(["s"], () => {
             if (!this.busy && this.game.currentPlayer.id === "human" && this.game.status === "playing") {
-                this.sellCheapest();
-                void this.autoSave();
+                if (this.game.currentPlayer.properties.length === 0) return;
+                void this.showSellPrompt();
             }
         });
 
@@ -514,12 +514,54 @@ export class App {
         setTimeout(() => this.closePopup(box), popupDurationMs);
     }
 
-    private sellCheapest(): void {
-        const player = this.game.currentPlayer;
-        if (player.properties.length === 0) return;
-        const cheapestProperty = [...player.properties].sort((a, b) => a.price - b.price)[0]!;
-        this.game.sellProperty(player, cheapestProperty.id);
-        this.render();
+    private showSellPrompt(): Promise<void> {
+        return new Promise(resolve => {
+            this.busy = true;
+
+            const player = this.game.currentPlayer;
+            const items = player.properties.map(property => `{green-fg}${property.name}  —  sell for $${Math.floor(property.price * SELL_RATE)}{/green-fg}`);
+            items.push("{red-fg}{bold}[ Cancel ]{/bold}{/red-fg}");
+
+            const sellList = blessed.list({
+                top: "center",
+                left: "center",
+                width: "50%",
+                height: "50%",
+                border: { type: "line" },
+                label: " Sell Property ",
+                tags: true,
+                keys: true,
+                mouse: true,
+                style: {
+                    border: { fg: "green" },
+                    label: { fg: "green", bold: true },
+                    selected: { bg: "cyan", fg: "white" },
+                } as any,
+                items: items as any,
+            });
+
+            const finish = () => {
+                this.screen.remove(sellList);
+                this.busy = false;
+                this.render();
+                resolve();
+            };
+
+            this.screen.append(sellList);
+            sellList.focus();
+            this.screen.render();
+
+            sellList.on("select", (_item: unknown, index: number) => {
+                if (index < player.properties.length) {
+                    const property = player.properties[index]!;
+                    this.game.sellProperty(player, property.id);
+                    void this.autoSave();
+                }
+                finish();
+            });
+
+            this.screen.onceKey("escape", finish);
+        });
     }
 
     private render(): void {
@@ -547,3 +589,4 @@ export class App {
         };
     }
 }
+
