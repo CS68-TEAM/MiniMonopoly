@@ -94,10 +94,7 @@ function centerTagged(taggedText: string, width: number): string {
     return " ".repeat(leftPadding) + taggedText + " ".repeat(rightPadding);
 }
 
-function renderTileName(
-    tile: { name: string; type: string; property?: { owner?: { id: string } | null } },
-    width: number,
-): string {
+function renderTileName( tile: { name: string; type: string; property?: { owner?: { id: string } | null } }, width: number ): string {
     const ownerId = tile.type === "property" ? tile.property?.owner?.id : undefined;
     if (!ownerId) return centerPlain(tile.name, width);
     const [colorOpen, colorClose] = PLAYER_COLORS[ownerId] ?? ["{white-fg}", "{/white-fg}"];
@@ -129,8 +126,8 @@ export class BoardView {
         const bottomLeftCorner = tiles[24]!;
         const leftEdgeTiles = [...tiles.slice(25, 32)].reverse();
 
-        const positionOf = (p: Player): number => positionOverrides?.[p.id] ?? p.position;
-        const playersOnTile = (tileIndex: number): Player[] => players.filter(p => p.status !== "bankrupt" && positionOf(p) === tileIndex);
+        const positionOf = (player: Player): number => positionOverrides?.[player.id] ?? player.position;
+        const playersOnTile = (tileIndex: number): Player[] => players.filter(player => player.status !== "bankrupt" && positionOf(player) === tileIndex);
         const playerLabel = (player: Player): string => `P${players.indexOf(player) + 1}`;
         const playerColor = (player: Player): [string, string] => PLAYER_COLORS[player.id] ?? ["{white-fg}", "{/white-fg}"];
 
@@ -146,15 +143,15 @@ export class BoardView {
             const joinedLabels = playersHere.map(playerLabel).join(",");
             if (joinedLabels.length <= TILE_WIDTH) {
                 return playersHere
-                    .map(p => {
-                        const [colorOpen, colorClose] = playerColor(p);
-                        return `${colorOpen}{bold}${playerLabel(p)}{/bold}${colorClose}`;
+                    .map(player => {
+                        const [colorOpen, colorClose] = playerColor(player);
+                        return `${colorOpen}{bold}${playerLabel(player)}{/bold}${colorClose}`;
                     })
                     .join(",");
             }
 
             const [colorOpen, colorClose] = playerColor(playersHere[0]!);
-            return `${colorOpen}{bold}${playerLabel(playersHere[0]!)}{/bold}${colorClose}{gray-fg}+${playersHere.length - 1}{/gray-fg}`;
+            return `${colorOpen}{bold}${playerLabel(playersHere[0]!)}{/bold}${colorClose}{white-fg}+${playersHere.length - 1}{/white-fg}`;
         };
 
         const renderOccupantCell = (tileIndex: number, width: number): string => {
@@ -162,11 +159,11 @@ export class BoardView {
             return occupantMark ? padTagged(occupantMark, width) : " ".repeat(width);
         };
 
-        let propertyBarIndex = 0;
+        let propertyBarColorIndex = 0;
         const renderTopBottomSubtext = (tile: typeof tiles[0], width: number): string => {
             if (tile.type !== "property") return centerPlain(TILE_SUBTEXT[tile.type] ?? "", width);
             const dashLength = Math.max(3, width - 4);
-            const [colorOpen, colorClose] = PROPERTY_BAR_COLORS[propertyBarIndex++ % PROPERTY_BAR_COLORS.length]!;
+            const [colorOpen, colorClose] = PROPERTY_BAR_COLORS[propertyBarColorIndex++ % PROPERTY_BAR_COLORS.length]!;
             return centerTagged(`${colorOpen}${"═".repeat(dashLength)}${colorClose}`, width);
         };
         const renderCornerSubtext = (tile: typeof tiles[0]): string => centerPlain(tile.type === "start" ? "+200$" : tile.type === "parking" ? "FREE" : "", CORNER_WIDTH);
@@ -191,9 +188,9 @@ export class BoardView {
         const outputLines: string[] = [];
 
         outputLines.push(topBorder);
-        outputLines.push("│" + centerPlain(topLeftCorner.name, CORNER_WIDTH) + "│" + topEdgeTiles.map(t => renderTileName(t, TILE_WIDTH)).join("│") + "│" + centerPlain(topRightCorner.name, CORNER_WIDTH) + "│");
-        outputLines.push("│" + renderCornerSubtext(topLeftCorner) + "│" + topEdgeTiles.map(t => renderTopBottomSubtext(t, TILE_WIDTH)).join("│") + "│" + renderCornerSubtext(topRightCorner) + "│");
-        outputLines.push("│" + renderOccupantCell(0, CORNER_WIDTH) + "│" + topEdgeTiles.map((_t, i) => renderOccupantCell(i + 1, TILE_WIDTH)).join("│") + "│" + renderOccupantCell(8, CORNER_WIDTH) + "│");
+        outputLines.push("│" + centerPlain(topLeftCorner.name, CORNER_WIDTH) + "│" + topEdgeTiles.map(tile => renderTileName(tile, TILE_WIDTH)).join("│") + "│" + centerPlain(topRightCorner.name, CORNER_WIDTH) + "│");
+        outputLines.push("│" + renderCornerSubtext(topLeftCorner) + "│" + topEdgeTiles.map(tile => renderTopBottomSubtext(tile, TILE_WIDTH)).join("│") + "│" + renderCornerSubtext(topRightCorner) + "│");
+        outputLines.push("│" + renderOccupantCell(0, CORNER_WIDTH) + "│" + topEdgeTiles.map((_tile, i) => renderOccupantCell(i + 1, TILE_WIDTH)).join("│") + "│" + renderOccupantCell(8, CORNER_WIDTH) + "│");
         outputLines.push(middleBorder);
 
         const sideRowSeparator = "├" + cornerHorizontalLine + "│" + " ".repeat(CENTER_WIDTH) + "│" + cornerHorizontalLine + "┤";
@@ -211,14 +208,15 @@ export class BoardView {
             outputLines.push(`│${leftSubtextCell}│${" ".repeat(CENTER_WIDTH)}│${rightSubtextCell}│`);
             outputLines.push(`│${renderOccupantCell(31 - row, CORNER_WIDTH)}│${" ".repeat(CENTER_WIDTH)}│${renderOccupantCell(9 + row, CORNER_WIDTH)}│`);
 
-            if (row < 6) outputLines.push(sideRowSeparator);
+            if (row < 6) 
+                outputLines.push(sideRowSeparator);
         }
 
         outputLines.push(middleBorder);
 
-        outputLines.push("│" + centerPlain(bottomLeftCorner.name, CORNER_WIDTH) + "│" + bottomEdgeTiles.map(t => renderTileName(t, TILE_WIDTH)).join("│") + "│" + centerPlain(bottomRightCorner.name, CORNER_WIDTH) + "│");
-        outputLines.push("│" + renderCornerSubtext(bottomLeftCorner) + "│" + bottomEdgeTiles.map(t => renderTopBottomSubtext(t, TILE_WIDTH)).join("│") + "│" + renderCornerSubtext(bottomRightCorner) + "│");
-        outputLines.push("│" + renderOccupantCell(24, CORNER_WIDTH) + "│" + bottomEdgeTiles.map((_t, i) => renderOccupantCell(23 - i, TILE_WIDTH)).join("│") + "│" + renderOccupantCell(16, CORNER_WIDTH) + "│");
+        outputLines.push("│" + centerPlain(bottomLeftCorner.name, CORNER_WIDTH) + "│" + bottomEdgeTiles.map(tile => renderTileName(tile, TILE_WIDTH)).join("│") + "│" + centerPlain(bottomRightCorner.name, CORNER_WIDTH) + "│");
+        outputLines.push("│" + renderCornerSubtext(bottomLeftCorner) + "│" + bottomEdgeTiles.map(tile => renderTopBottomSubtext(tile, TILE_WIDTH)).join("│") + "│" + renderCornerSubtext(bottomRightCorner) + "│");
+        outputLines.push("│" + renderOccupantCell(24, CORNER_WIDTH) + "│" + bottomEdgeTiles.map((_tile, i) => renderOccupantCell(23 - i, TILE_WIDTH)).join("│") + "│" + renderOccupantCell(16, CORNER_WIDTH) + "│");
         outputLines.push(bottomBorder);
 
         this.box.setContent(outputLines.join("\n"));
