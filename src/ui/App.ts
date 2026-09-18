@@ -2,7 +2,7 @@ import blessed from "blessed";
 import { execSync } from "child_process";
 import { Game, movePosition, TAKEOVER_MULTIPLIER, SELL_RATE, JAIL_BAIL_AMOUNT } from "../game/Game";
 import { Player } from "../game/Player";
-import type { ChanceCard, SaveData, SavedPlayerData } from "../game/Types";
+import { ChanceCard, SaveData, SavedPlayerData } from "../game/Types";
 import { EasyAI } from "../ai/EasyAI";
 import { NormalAI } from "../ai/NormalAI";
 import { HardAI } from "../ai/HardAI";
