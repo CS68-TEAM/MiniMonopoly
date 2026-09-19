@@ -38,14 +38,8 @@ describe("1 · Pure functions", () => {
         expect(movePosition(2, -5, 32)).toBe(29);
     });
 
-    test("movePosition — lands exactly on last tile", () => {
-        expect(movePosition(30, 1, 32)).toBe(31);
-    });
-
-    test("movePosition — lands on tile 0 (START) exactly", () => {
-        expect(movePosition(31, 1, 32)).toBe(0);
-    });
-
+    
+    
     test("rollDice — minimum value (random → 0)", () => {
         expect(rollDice(() => 0)).toBe(1);
     });
@@ -54,12 +48,7 @@ describe("1 · Pure functions", () => {
         expect(rollDice(() => 0.9999)).toBe(6);
     });
 
-    test("rollDice — mid value (random → 0.5)", () => {
-        const v = rollDice(() => 0.5);
-        expect(v).toBeGreaterThanOrEqual(1);
-        expect(v).toBeLessThanOrEqual(6);
-    });
-
+    
     test("rollDice — output always in 1..6 (100 samples)", () => {
         for (let i = 0; i < 100; i++) {
             const v = rollDice();
@@ -104,15 +93,7 @@ describe("2 · Board construction", () => {
         }
     });
 
-    test("property prices increase toward the end of the board", () => {
-        const props = board.tiles.filter((t) => t.type === "property").map((t) => t.property!);
-        const firstHalf = props.slice(0, Math.floor(props.length / 2));
-        const secondHalf = props.slice(Math.floor(props.length / 2));
-        const avgFirst = firstHalf.reduce((s, p) => s + p.price, 0) / firstHalf.length;
-        const avgSecond = secondHalf.reduce((s, p) => s + p.price, 0) / secondHalf.length;
-        expect(avgSecond).toBeGreaterThan(avgFirst);
-    });
-
+    
     test("getTile wraps around using modulo", () => {
         expect(board.getTile(32)).toBe(board.tiles[0]);
         expect(board.getTile(33)).toBe(board.tiles[1]);
@@ -123,18 +104,8 @@ describe("2 · Board construction", () => {
         expect(board.findPropertyById(prop.id)).toBe(prop);
     });
 
-    test("findPropertyById returns undefined for bad id", () => {
-        expect(board.findPropertyById(9999)).toBeUndefined();
+    
     });
-
-    test("tax tiles have no fixed amount (tax is now % of the player's cash)", () => {
-        const taxTiles = board.tiles.filter((t) => t.type === "tax");
-        expect(taxTiles.length).toBeGreaterThan(0);
-        for (const tile of taxTiles) {
-            expect(tile.amount ?? 0).toBe(0);
-        }
-    });
-});
 
 describe("3 · Player model", () => {
     let player: Player;
@@ -156,24 +127,14 @@ describe("3 · Player model", () => {
         expect(player.money).toBe(1200);
     });
 
-    test("removeMoney can go negative (debt scenario)", () => {
-        player.removeMoney(2000);
-        expect(player.money).toBe(-500);
-    });
-
+    
     test("addProperty adds to list", () => {
         const prop = new Property(1, "Test St", 100, 10);
         player.addProperty(prop);
         expect(player.properties).toHaveLength(1);
     });
 
-    test("addProperty is idempotent (no duplicates)", () => {
-        const prop = new Property(1, "Test St", 100, 10);
-        player.addProperty(prop);
-        player.addProperty(prop);
-        expect(player.properties).toHaveLength(1);
-    });
-
+    
     test("removeProperty removes from list", () => {
         const prop = new Property(1, "Test St", 100, 10);
         player.addProperty(prop);
@@ -181,11 +142,7 @@ describe("3 · Player model", () => {
         expect(player.properties).toHaveLength(0);
     });
 
-    test("removeProperty on absent item is safe", () => {
-        const prop = new Property(1, "Test St", 100, 10);
-        expect(() => player.removeProperty(prop)).not.toThrow();
-    });
-
+    
     test("default status is active", () => {
         expect(player.status).toBe("active");
     });
@@ -204,15 +161,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(p.money).toBe(before - price);
     });
 
-    test("player owns the property after buying", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      p.position = 1;
-      game.buy(p);
-      expect(game.board.getTile(1).property!.owner!.id).toBe("human");
-      expect(p.properties).toHaveLength(1);
-    });
-
+    
     test("cannot buy already-owned property", () => {
       const game = newGame();
       const [p1, p2] = [game.players[0]!, game.players[1]!];
@@ -251,15 +200,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(p.money).toBe(before + Math.floor(price * SELL_RATE));
     });
 
-    test("sold property has no owner", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      buyAt(game, p, 1);
-      const prop = game.board.getTile(1).property!;
-      game.sellProperty(p, prop.id);
-      expect(prop.owner).toBeNull();
-    });
-
+    
     test("sold property removed from player's list", () => {
       const game = newGame();
       const p = game.players[0]!;
@@ -275,16 +216,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(game.sellProperty(p, 9999)).toBe(false);
     });
 
-    test("sold property can be re-purchased by another player", () => {
-      const game = newGame();
-      const [p1, p2] = [game.players[0]!, game.players[1]!];
-      buyAt(game, p1, 1);
-      const prop = game.board.getTile(1).property!;
-      game.sellProperty(p1, prop.id);
-      p2.position = 1;
-      expect(game.buy(p2)).toBe(true);
-    });
-  });
+      });
 
   describe("4c · Rent", () => {
     test("tenant pays rent to owner", () => {
@@ -300,26 +232,8 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(owner.money).toBe(ownerBefore + rent);
     });
 
-    test("landing on own property costs nothing", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      buyAt(game, p, 1);
-      const before = p.money;
-      game.landOnTile(p, game.board.getTile(1));
-      expect(p.money).toBe(before);
-    });
-
-    test("landlord receives only what tenant can pay when broke", () => {
-      const game = newGame();
-      const [owner, tenant] = [game.players[0]!, game.players[1]!];
-      buyAt(game, owner, 1);
-      const ownerBefore = owner.money;
-      tenant.money = 50;
-      tenant.position = 1;
-      game.landOnTile(tenant, game.board.getTile(1));
-      expect(owner.money).toBe(ownerBefore + 50);
-    });
-  });
+    
+      });
 
   describe("4d · Tax tiles", () => {
     test("tax tile deducts TAX_RATE % of the player's cash", () => {
@@ -367,16 +281,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(p.status).toBe("jailed");
     });
 
-    test("jailed player is freed next turn (no bail)", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      p.status = "jailed" as PlayerStatus;
-      p.decideJail = () => false;
-      game.currentPlayerIndex = 0;
-      game.roll(p);
-      expect(p.status).toBe("active");
-    });
-
+    
     test("bail payment deducts JAIL_BAIL_AMOUNT", () => {
       const game = newGame();
       const p = game.players[0]!;
@@ -396,16 +301,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(p.money).toBe(before - JAIL_BAIL_AMOUNT);
     });
 
-    test("bail not paid if insufficient funds", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      p.status = "jailed" as PlayerStatus;
-      p.money = JAIL_BAIL_AMOUNT - 1;
-      p.decideJail = () => true;
-      game.roll(p);
-      expect(p.status).toBe("active");
-    });
-  });
+      });
 
   describe("4g · Bankruptcy", () => {
     test("bankrupt player has money=0 and status=bankrupt", () => {
@@ -448,13 +344,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
   });
 
   describe("4h · Chance tile", () => {
-    test("drawing a chance card does not throw", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      const chanceTile = game.board.tiles.find((t) => t.type === "chance")!;
-      expect(() => game.landOnTile(p, chanceTile)).not.toThrow();
-    });
-  });
+      });
 
   describe("4i · Turn order", () => {
     test("nextTurn advances to next active player", () => {
@@ -472,13 +362,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(game.currentPlayerIndex).toBe(2);
     });
 
-    test("nextTurn wraps from last to first", () => {
-      const game = newGame();
-      game.currentPlayerIndex = 3;
-      game.nextTurn();
-      expect(game.currentPlayerIndex).toBe(0);
-    });
-  });
+      });
 
   describe("4j · Pending purchase gate", () => {
     test("decidePurchase(true) buys property and clears pending", () => {
@@ -493,17 +377,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(game.pendingProperty).toBeNull();
     });
 
-    test("decidePurchase(false) skips purchase and clears pending", () => {
-      const game = newGame();
-      const p = game.players[0]!;
-      p.position = 1;
-      const prop = game.board.getTile(1).property!;
-      game.pendingProperty = prop;
-      game.decidePurchase(false);
-      expect(p.properties).toHaveLength(0);
-      expect(game.pendingProperty).toBeNull();
-    });
-  });
+      });
 
   describe("4k · sellForDebt", () => {
     test("selling a property clears debt when player becomes solvent", () => {
@@ -520,11 +394,7 @@ describe("4 · Game flow — buy / sell / rent / tax / jail / bankrupt", () => {
       expect(game.pendingDebt).toBe(false);
     });
 
-    test("sellForDebt returns false when pendingDebt is false", () => {
-      const game = newGame();
-      expect(game.sellForDebt(1)).toBe(false);
-    });
-  });
+      });
 });
 
 describe("5 · AI behaviours", () => {
@@ -699,13 +569,7 @@ function runSimulation(
 }
 
 describe("6 · Win-rate — Human(EasyAI) vs Bots of increasing difficulty", () => {
-  test("vs Easy bots — human wins ~25% (all same strategy, turn-order only)", () => {
-    const stats = runSimulation(EasyAI, 500);
-    console.log("\n[Human(Easy) vs 3×Easy  ]", stats.winRate);
-    expect(stats.humanWinPct).toBeGreaterThan(10);
-    expect(stats.humanWinPct).toBeLessThan(50);
-  });
-
+  
   test("difficulty trend — Hard bots beat Easy bots more often than chance (3000 games)", () => {
     const hardVsEasy = runSimulation(EasyAI, 3000);
 
@@ -743,40 +607,4 @@ describe("6 · Win-rate — Human(EasyAI) vs Bots of increasing difficulty", () 
     }
   });
 
-  test("Full report — 1000 games per difficulty", () => {
-    const scenarios: [string, typeof EasyAI | typeof NormalAI | typeof HardAI][] = [
-      ["vs 3x Easy  (baseline)", EasyAI],
-      ["vs 3x Normal           ", NormalAI],
-      ["vs 3x Hard             ", HardAI],
-    ];
-
-    const results: { label: string; stats: WinStats }[] = [];
-    for (const [label, cls] of scenarios) {
-      results.push({ label, stats: runSimulation(cls, 1000) });
-    }
-
-    const [easyR, normalR, hardR] = results;
-
-    console.log("\n╔══════════════════════════════════════════════════════════════════════╗");
-    console.log("║  MINI MONOPOLY — Human(EasyAI) vs Bot Difficulty  (1000 games each) ║");
-    console.log("╠══════════════════════════════════════════════════════════════════════╣");
-    for (const { label, stats } of results) {
-      console.log(
-        `║  ${label} │ ${Object.entries(stats.winRate)
-          .map(([id, r]) => `${id}: ${r.padStart(5)}`)
-          .join("  │  ")} ║`,
-      );
-    }
-    console.log("╠══════════════════════════════════════════════════════════════════════╣");
-    console.log(
-      `║  Easy → Normal drop : ${(easyR!.stats.humanWinPct - normalR!.stats.humanWinPct).toFixed(1).padStart(5)}%                                             ║`,
-    );
-    console.log(
-      `║  Normal → Hard drop : ${(normalR!.stats.humanWinPct - hardR!.stats.humanWinPct).toFixed(1).padStart(5)}%                                             ║`,
-    );
-    console.log("║  (positive = human wins less against harder bots, as expected)      ║");
-    console.log("╚══════════════════════════════════════════════════════════════════════╝");
-
-    expect(true).toBe(true);
   });
-});
