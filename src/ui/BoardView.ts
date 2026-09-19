@@ -127,8 +127,7 @@ export class BoardView {
         const leftEdgeTiles = [...tiles.slice(25, 32)].reverse();
 
         const positionOf = (player: Player): number => positionOverrides?.[player.id] ?? player.position;
-        const playersOnTile = (tileIndex: number): Player[] =>
-            players.filter(player => player.status !== "bankrupt" && positionOf(player) === tileIndex);
+        const playersOnTile = (tileIndex: number): Player[] => players.filter(player => player.status !== "bankrupt" && positionOf(player) === tileIndex);
         const playerLabel = (player: Player): string => `P${players.indexOf(player) + 1}`;
         const playerColor = (player: Player): [string, string] => PLAYER_COLORS[player.id] ?? ["{white-fg}", "{/white-fg}"];
 
@@ -152,7 +151,7 @@ export class BoardView {
             }
 
             const [colorOpen, colorClose] = playerColor(playersHere[0]!);
-            return `${colorOpen}{bold}${playerLabel(playersHere[0]!)}{/bold}${colorClose}{gray-fg}+${playersHere.length - 1}{/gray-fg}`;
+            return `${colorOpen}{bold}${playerLabel(playersHere[0]!)}{/bold}${colorClose}{white-fg}+${playersHere.length - 1}{/white-fg}`;
         };
 
         const renderOccupantCell = (tileIndex: number, width: number): string => {
@@ -167,8 +166,7 @@ export class BoardView {
             const [colorOpen, colorClose] = PROPERTY_BAR_COLORS[propertyBarColorIndex++ % PROPERTY_BAR_COLORS.length]!;
             return centerTagged(`${colorOpen}${"═".repeat(dashLength)}${colorClose}`, width);
         };
-        const renderCornerSubtext = (tile: typeof tiles[0]): string =>
-            centerPlain(tile.type === "start" ? "+200$" : tile.type === "parking" ? "FREE" : "", CORNER_WIDTH);
+        const renderCornerSubtext = (tile: typeof tiles[0]): string => centerPlain(tile.type === "start" ? "+200$" : tile.type === "parking" ? "FREE" : "", CORNER_WIDTH);
 
         const cornerHorizontalLine = "─".repeat(CORNER_WIDTH);
         const tileHorizontalLine = "─".repeat(TILE_WIDTH);
@@ -210,7 +208,8 @@ export class BoardView {
             outputLines.push(`│${leftSubtextCell}│${" ".repeat(CENTER_WIDTH)}│${rightSubtextCell}│`);
             outputLines.push(`│${renderOccupantCell(31 - row, CORNER_WIDTH)}│${" ".repeat(CENTER_WIDTH)}│${renderOccupantCell(9 + row, CORNER_WIDTH)}│`);
 
-            if (row < 6) outputLines.push(sideRowSeparator);
+            if (row < 6) 
+                outputLines.push(sideRowSeparator);
         }
 
         outputLines.push(middleBorder);
