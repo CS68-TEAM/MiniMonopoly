@@ -17,8 +17,9 @@ const makePlayers = (): [Player, Player, Player, Player] => [
 
 const noLog = () => {};
 
+//เทส fn newGame
 const newGame = () => new Game(makePlayers(), noLog);
-
+ 
 const buyAt = (game: Game, player: Player, pos: number) => {
     player.position = pos;
     game.buy(player);
