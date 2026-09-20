@@ -3,7 +3,7 @@ import { pickChanceEvent } from "./Chance";
 import { Player } from "./Player";
 import type { Property } from "./Property";
 import type { Tile, EventLog, OnChanceFn, GameStatus, RandomSource } from "./Types";
-
+//
 export function rollDice(random: RandomSource = Math.random): number {
     const roll = random() * 6;
     return Math.floor(roll) + 1;
@@ -13,7 +13,10 @@ export function movePosition(position: number, steps: number, boardSize: number)
     const raw = (position + steps) % boardSize;
     return (raw + boardSize) % boardSize;
 }
-
+export function getTakeOverPrice(property:Property){
+    return Math.ceil(property.price * TAKEOVER_MULTIPLIER);
+}
+export const START_BONUS = 200;
 export const JAIL_BAIL_AMOUNT = 250;
 export const TAKEOVER_MULTIPLIER = 1.5;
 export const MAX_PROPERTIES = 5;
@@ -68,8 +71,8 @@ export class Game {
         const old = player.position;
         const next = movePosition(old, dice, this.board.tiles.length);
         if (next < old && next !== 0) {
-            player.addMoney(200);
-            this.log(`${player.name} passed START and collected $200.`);
+            player.addMoney(START_BONUS);
+            this.log(`${player.name} passed START and collected $${START_BONUS}.`);
         }
         player.position = next;
         this.log(`${player.name} rolled ${dice} and moved to ${this.board.getTile(next).name}.`);
@@ -83,7 +86,7 @@ export class Game {
         this.checkBankruptcy(player);
         this.checkWinner();
 
-        const awaitingHumanDecision = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && !tile.property.owner;
+        const awaitingHumanDecision = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && this.canBuy(player, tile.property);
         if (awaitingHumanDecision) {
             this.pendingProperty = tile.property!;
         } else {
@@ -94,20 +97,17 @@ export class Game {
     }
 
     public decidePurchase(buy: boolean): void {
-        if (!this.pendingProperty)
-            return;
-        if (buy)
-            this.buy(this.currentPlayer);
+        if (!this.pendingProperty) return;
+        if (buy) this.buy(this.currentPlayer);
         this.pendingProperty = null;
-        if (this.status === "playing")
-            this.nextTurn();
+        if (this.status === "playing")  this.nextTurn();
     }
 
     public landOnTile(player: Player, tile: Tile): void {
         switch (tile.type) {
             case "start":
-                player.addMoney(200);
-                this.log(`${player.name} landed on START and received $200.`);
+                player.addMoney(START_BONUS);
+                this.log(`${player.name} landed on START and received $${START_BONUS}.`);
                 break;
             case "tax":
                 this.pay(player, Math.ceil(player.money * TAX_RATE), "tax");
@@ -135,6 +135,7 @@ export class Game {
         && player.properties.length < MAX_PROPERTIES
         && player.purchaseCount < MAX_DIRECT_PURCHASES;
     }
+
     public buy(player: Player): boolean {
         const tile = this.board.getTile(player.position);
         if (tile.type !== "property" || !tile.property)
@@ -157,11 +158,12 @@ export class Game {
 
         player.removeProperty(property);
         property.owner = null;
-        const sellprice = Math.floor(property.price * SELL_RATE);
-        player.addMoney(sellprice);
-        this.log(`${player.name} sold ${property.name} for $${sellprice}.`);
+        const sellPrice = Math.floor(property.price * SELL_RATE);
+        player.addMoney(sellPrice);
+        this.log(`${player.name} sold ${property.name} for $${sellPrice}.`);
         return true;
     }
+
         //เเก้ logic ให้สามารถ check takeovercount ได้ด้วย
     public takeOver(buyer: Player, propertyId: number, offer: number): boolean {
         const property = this.board.findPropertyById(propertyId);
@@ -171,7 +173,7 @@ export class Game {
         
         if (property.owner.id === buyer.id) return false;
        
-        if (offer < property.price * TAKEOVER_MULTIPLIER) return false;
+        if (offer < getTakeOverPrice(property)) return false;
         
         if (buyer.money < offer)  return false;
        
@@ -189,6 +191,7 @@ export class Game {
         this.log(`? ${buyer.name} took over ${property.name} from ${seller.name} for $${offer}!`);
         return true;
     }
+    
         //เเก้ทำให้ check properties ถ้ามากว่า max_property return false;
     public startTakeover(propertyId: number): boolean {
         const property = this.board.findPropertyById(propertyId);
@@ -201,8 +204,7 @@ export class Game {
         
         if (human.takeoverCount >= TAKEOVER_LIMIT) return false;
        
-        const minOffer = Math.ceil(property.price * TAKEOVER_MULTIPLIER);
-        if (human.money < minOffer) return false;
+        if (human.money < getTakeOverPrice(property)) return false;
         this.pendingTakeover = property;
         return true;
     }
@@ -211,8 +213,7 @@ export class Game {
         if (!this.pendingTakeover) return;
         if (confirm) {
             const human = this.players.find(p => p.id === "human")!;
-            const offer = Math.ceil(this.pendingTakeover.price * TAKEOVER_MULTIPLIER);
-            this.takeOver(human, this.pendingTakeover.id, offer);
+            this.takeOver(human, this.pendingTakeover.id, getTakeOverPrice(this.pendingTakeover));
         }
         this.pendingTakeover = null;
     }
@@ -282,7 +283,7 @@ export class Game {
         }
         while (player.money < 0 && player.properties.length > 0) {
             const sellOrder = player.sellPriority?.(player) ?? [...player.properties].sort((a, b) => a.price - b.price);
-            const toSell = sellOrder[0] ?? player.properties[0]!;
+            const toSell = sellOrder.find(p => player.properties.includes(p)) ?? player.properties[0]!;
             this.sellProperty(player, toSell.id);
         }
         this.checkBankruptcy(player);
