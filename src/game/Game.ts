@@ -129,18 +129,20 @@ export class Game {
         }
     }
 
+    public canBuy(player: Player, property: Property): boolean {
+    return !property.isOwned()
+        && player.money >= property.price
+        && player.properties.length < MAX_PROPERTIES
+        && player.purchaseCount < MAX_DIRECT_PURCHASES;
+    }
     public buy(player: Player): boolean {
         const tile = this.board.getTile(player.position);
-        if (tile.type !== "property" || !tile.property || tile.property.owner)
+        if (tile.type !== "property" || !tile.property)
             return false;
+
         const property = tile.property;
-        if (player.money < property.price)
-            return false;
-        if (player.properties.length >= MAX_PROPERTIES)
-            return false;
-        if (player.purchaseCount >= MAX_DIRECT_PURCHASES)
-            return false;
- 
+        if (!this.canBuy(player , property)) return false;
+       
         player.removeMoney(property.price);
         property.owner = { id: player.id, name: player.name };
         player.addProperty(property);
@@ -151,33 +153,32 @@ export class Game {
 
     public sellProperty(player: Player, propertyId: number): boolean {
         const property = player.properties.find(p => p.id === propertyId);
-        if (!property) 
-            return false;
+        if (!property) return false;
 
         player.removeProperty(property);
         property.owner = null;
-        const sellPrice = Math.floor(property.price * SELL_RATE);
-        player.addMoney(sellPrice);
-        this.log(`${player.name} sold ${property.name} for $${sellPrice}.`);
+        const sellprice = Math.floor(property.price * SELL_RATE);
+        player.addMoney(sellprice);
+        this.log(`${player.name} sold ${property.name} for $${sellprice}.`);
         return true;
     }
-
+        //เเก้ logic ให้สามารถ check takeovercount ได้ด้วย
     public takeOver(buyer: Player, propertyId: number, offer: number): boolean {
         const property = this.board.findPropertyById(propertyId);
-        if (!property || !property.owner)
-            return false;
-        if (property.owner.id === buyer.id)
-            return false;
-        if (offer < property.price * TAKEOVER_MULTIPLIER)
-            return false;
-        if (buyer.money < offer) 
-            return false;
-        if (buyer.takeoverCount >= TAKEOVER_LIMIT)
-            return false;
+        if (buyer.properties.length >= MAX_PROPERTIES) return false;
+       
+        if (!property || !property.owner) return false;
+        
+        if (property.owner.id === buyer.id) return false;
+       
+        if (offer < property.price * TAKEOVER_MULTIPLIER) return false;
+        
+        if (buyer.money < offer)  return false;
+       
+        if (buyer.takeoverCount >= TAKEOVER_LIMIT) return false;
 
         const seller = this.players.find(p => p.id === property.owner!.id);
-        if (!seller)
-            return false;
+        if (!seller) return false;
 
         buyer.removeMoney(offer);
         seller.addMoney(offer);
@@ -188,19 +189,20 @@ export class Game {
         this.log(`? ${buyer.name} took over ${property.name} from ${seller.name} for $${offer}!`);
         return true;
     }
-
+        //เเก้ทำให้ check properties ถ้ามากว่า max_property return false;
     public startTakeover(propertyId: number): boolean {
         const property = this.board.findPropertyById(propertyId);
-        if (!property || !property.owner || property.owner.id === "human")
-            return false;
+        if (!property || !property.owner || property.owner.id === "human") return false;
+       
         const human = this.players.find(p => p.id === "human");
-        if (!human)
-            return false;
-        if (human.takeoverCount >= TAKEOVER_LIMIT)
-            return false;
+        if (!human) return false;
+       
+        if (human.properties.length >= MAX_PROPERTIES) return false;
+        
+        if (human.takeoverCount >= TAKEOVER_LIMIT) return false;
+       
         const minOffer = Math.ceil(property.price * TAKEOVER_MULTIPLIER);
-        if (human.money < minOffer)
-            return false;
+        if (human.money < minOffer) return false;
         this.pendingTakeover = property;
         return true;
     }
@@ -224,13 +226,14 @@ export class Game {
         this.currentPlayerIndex = next;
     }
 
-    public checkWinner(): Player | null {
+    public checkWinner(): Player | null { 
+        if (this.status === "finished") return this.winner;
         const active = this.activePlayers;
-        if (active.length === 1) {
+         if (active.length === 1) {
             this.status = "finished";
             this.winner = active[0]!;
             this.log(`+ ${this.winner.name} wins the game!`);
-        }
+        }   
         return this.winner;
     }
 
