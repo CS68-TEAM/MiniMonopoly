@@ -14,6 +14,7 @@ export interface PlayerRef {
 }
 
 export type TileType = "start" | "property" | "tax" | "jail" | "goToJail" | "chance" | "parking";
+export type TileColor = "cyan" | "green" | "yellow" | "magenta" | "red" | "blue";
 
 export interface Tile {
     readonly index: number;
@@ -21,6 +22,7 @@ export interface Tile {
     readonly type: TileType;
     readonly property?: Property;
     readonly amount?: number;
+    readonly color?: TileColor;
 }
 
 export interface TileDef {
@@ -30,6 +32,7 @@ export interface TileDef {
     readonly rent: number;
     readonly price: number;
     readonly isCorner: boolean;
+    readonly color?: TileColor;
 }
 
 export interface ChanceContext {

@@ -44,16 +44,6 @@ export const WORLD_TILES = [
     { index: 31, type: "tax", name: "Tax" },
 ] as const;
 
-const PROPERTY_BAR_COLORS: [string, string][] = [
-    ["{cyan-fg}", "{/cyan-fg}"],
-    ["{green-fg}", "{/green-fg}"],
-    ["{yellow-fg}", "{/yellow-fg}"],
-    ["{magenta-fg}", "{/magenta-fg}"],
-    ["{red-fg}", "{/red-fg}"],
-    ["{blue-fg}", "{/blue-fg}"],
-    ["{white-fg}", "{/white-fg}"],
-];
-
 const TILE_SUBTEXT: Record<string, string> = {
     start: "+200$",
     tax: "-15%",
@@ -63,11 +53,163 @@ const TILE_SUBTEXT: Record<string, string> = {
     chance: "?",
 };
 
-const CORNER_WIDTH = 13; // ความกว้างของช่องมุมกระดาน (และช่องฝั่งซ้าย/ขวา)
-// ช่องแถวบน/ล่าง: ต้องกว้างอย่างน้อย 11 เพื่อให้ "P1,P2,P3,P4" (ผู้เล่น 4 คนในช่องเดียวกัน) แสดงครบ ไม่ต้องย่อเป็น +N
+const CORNER_WIDTH = 17;
 const TILE_WIDTH = 12;
-const CENTER_WIDTH = TILE_WIDTH * 7 + 6; // ความกว้างพื้นที่กลางกระดาน
-const CENTER_HEIGHT = 7 * 3 + 6;         // ความสูงพื้นที่กลางกระดาน (7 แถว x 3 บรรทัด + เส้นคั่น 6 บรรทัด)
+const CENTER_HEIGHT = 7 * 3 + 6;
+const TALL_ROW_LINES = 6;
+const COMPACT_ROW_LINES = 4;
+const TALL_BOARD_LINES = 31 + 2 * TALL_ROW_LINES; // 43
+
+
+interface CornerSpec {
+    readonly band: string;
+    readonly title: string;
+    readonly tall: { readonly bitmap: readonly string[]; readonly palette: Readonly<Record<string, string>> };
+    readonly compact: { readonly bitmap: readonly string[]; readonly palette: Readonly<Record<string, string>>; readonly plate: readonly [string, string, string] };
+}
+
+const CORNER_SPECS: Record<string, CornerSpec> = {
+    start: {
+        band: "green",
+        title: "START  +$200",
+        tall: {
+            bitmap: [
+                ".......GG....",
+                ".......GGG...",
+                "GGGGGGGGGGG..",
+                "GGGGGGGGGGGGG",
+                "GGGGGGGGGGGGG",
+                "GGGGGGGGGGG..",
+                ".......GGG...",
+                ".......GG....",
+            ],
+            palette: { G: "10" },
+        },
+        compact: {
+            bitmap: [".GG.....", ".GGGG...", ".GGGGGG.", ".GGGGGG.", ".GGGG...", ".GG....."],
+            palette: { G: "2" },
+            plate: ["", "GO", "+$200"],
+        },
+    },
+    jail: {
+        band: "magenta",
+        title: "J A I L",
+        tall: {
+            bitmap: [
+                "MMMMMMMMMMMMM",
+                "M.w.w.w.w.w.M",
+                "M.w.w.w.w.w.M",
+                "M.w.w.w.w.w.M",
+                "M.w.w.w.w.w.M",
+                "M.w.w.w.w.w.M",
+                "M.w.w.w.w.w.M",
+                "MMMMMMMMMMMMM",
+            ],
+            palette: { M: "13", w: "15" },
+        },
+        compact: {
+            bitmap: ["MMMMMMMM", "M.w.w.wM", "M.w.w.wM", "M.w.w.wM", "M.w.w.wM", "MMMMMMMM"],
+            palette: { M: "5", w: "15" },
+            plate: ["", "JAIL", ""],
+        },
+    },
+    goToJail: {
+        band: "red",
+        title: "GO TO JAIL",
+        tall: {
+            bitmap: [
+                "...RR..........",
+                "...RRR..WWWWWWW",
+                "RRRRRRR.W.w.w.W",
+                "RRRRRRRRW.w.w.W",
+                "RRRRRRRRW.w.w.W",
+                "RRRRRRR.W.w.w.W",
+                "...RRR..W.w.w.W",
+                "...RR...WWWWWWW",
+            ],
+            palette: { R: "9", W: "7", w: "15" },
+        },
+        compact: {
+            bitmap: ["RRRRRRRR", "R.w.w.wR", "R.w.w.wR", "R.w.w.wR", "R.w.w.wR", "RRRRRRRR"],
+            palette: { R: "1", w: "15" },
+            plate: ["GO", "TO", "JAIL"],
+        },
+    },
+    parking: {
+        band: "blue",
+        title: "FREE PARKING",
+        tall: {
+            bitmap: [
+                ".BBBBBBBBBBB.",
+                "BBBBBBBBBBBBB",
+                "BBBBwwwwBBBBB",
+                "BBBBwBBBwBBBB",
+                "BBBBwBBBwBBBB",
+                "BBBBwwwwBBBBB",
+                "BBBBwBBBBBBBB",
+                "BBBBwBBBBBBBB",
+            ],
+            palette: { B: "12", w: "15" },
+        },
+        compact: {
+            bitmap: [".BBBBBB.", "BBwwwBBB", "BBwBwBBB", "BBwwwBBB", "BBwBBBBB", ".BBBBBB."],
+            palette: { B: "4", w: "15" },
+            plate: ["FREE", "PARKING", ""],
+        },
+    },
+};
+
+function pixelRows(bitmap: readonly string[], palette: Readonly<Record<string, string>>): string[] {
+    const rows: string[] = [];
+    for (let y = 0; y < bitmap.length; y += 2) {
+        const upper = bitmap[y]!;
+        const lower = bitmap[y + 1] ?? "";
+        const cells: { fg?: string; bg?: string; ch: string }[] = [];
+        for (let x = 0; x < upper.length; x++) {
+            const top = palette[upper[x]!];
+            const bottom = palette[lower[x] ?? "."];
+            if (top === undefined && bottom === undefined) cells.push({ ch: " " });
+            else if (bottom === undefined) cells.push({ fg: top, ch: "▀" });
+            else if (top === undefined) cells.push({ fg: bottom, ch: "▄" });
+            else if (top === bottom) cells.push({ fg: top, ch: "█" });
+            else cells.push({ fg: top, bg: bottom, ch: "▀" });
+        }
+
+        let out = "";
+        for (let i = 0; i < cells.length;) {
+            let j = i;
+            while (j < cells.length && cells[j]!.fg === cells[i]!.fg && cells[j]!.bg === cells[i]!.bg && cells[j]!.ch === cells[i]!.ch) j++;
+            const { fg, bg, ch } = cells[i]!;
+            const text = ch.repeat(j - i);
+            if (fg === undefined) out += text;
+            else if (bg === undefined) out += `{${fg}-fg}${text}{/${fg}-fg}`;
+            else out += `{${fg}-fg}{${bg}-bg}${text}{/${bg}-bg}{/${fg}-fg}`;
+            i = j;
+        }
+        rows.push(out);
+    }
+    return rows;
+}
+
+const bandText = (text: string, band: string): string => `{${band}-bg}{15-fg}{bold}${text}{/bold}{/15-fg}{/${band}-bg}`;
+
+
+function cornerCard(type: string, occupants: string, tall: boolean): string[] {
+    const spec = CORNER_SPECS[type];
+    const lineCount = tall ? TALL_ROW_LINES : COMPACT_ROW_LINES;
+    if (!spec) return Array.from({ length: lineCount }, () => " ".repeat(CORNER_WIDTH));
+
+    const occupantLine = centerTagged(occupants, CORNER_WIDTH);
+    if (tall) {
+        const picture = pixelRows(spec.tall.bitmap, spec.tall.palette).map(row => centerTagged(row, CORNER_WIDTH));
+        return [...picture, bandText(centerPlain(spec.title, CORNER_WIDTH), spec.band), occupantLine];
+    }
+
+    const picture = pixelRows(spec.compact.bitmap, spec.compact.palette);
+    const plateWidth = CORNER_WIDTH - 10;
+    const rows = picture.map((row, i) => " " + row + " " + bandText(centerPlain(spec.compact.plate[i] ?? "", plateWidth), spec.band));
+    return [...rows, occupantLine];
+}
 
 function padTagged(taggedText: string, width: number): string {
     const plainText = taggedText.replace(/\{[^}]+\}/g, "");
@@ -105,20 +247,34 @@ function renderTileName( tile: { name: string; type: string; property?: { owner?
 }
 
 export class BoardView {
-    public readonly box = blessed.box({
-        label: " WORLD MONOPOLY ",
-        border: { type: "line" },
-        style: {
-            border: { fg: "cyan" },
-            label: { fg: "cyan", bold: true },
-        },
-        tags: true,
-        align: "center" as const,
-        valign: "middle" as const,
-        padding: { left: 1, right: 1, top: 0, bottom: 0 },
-    });
+    public readonly box = blessed.box({ label: " WORLD MONOPOLY   ·   [?] Controls ", border: { type: "line" }, style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } }, tags: true, align: "center" as const, valign: "middle" as const, padding: { left: 1, right: 1, top: 0, bottom: 0 },});
+
+    private hasRoomForTallCorners(): boolean {
+        try {
+            const height = this.box.height;
+            return typeof height === "number" && height - 2 >= TALL_BOARD_LINES;
+        } catch {
+            return false;
+        }
+    }
+
+    private computeTileWidth(): number {
+        try {
+            const boxWidth = this.box.width;
+            if (typeof boxWidth !== "number") return TILE_WIDTH;
+            const innerWidth = boxWidth - 4; 
+            const fitted = Math.floor((innerWidth - 2 * CORNER_WIDTH - 10) / 7);
+            return Math.max(TILE_WIDTH, fitted);
+        } catch {
+            return TILE_WIDTH;
+        }
+    }
 
     public render(board: Board, players: Player[], positionOverrides?: Record<string, number>): void {
+        const tall = this.hasRoomForTallCorners();
+        const rowLines = tall ? TALL_ROW_LINES : COMPACT_ROW_LINES;
+        const tileWidth = this.computeTileWidth();
+        const centerWidth = tileWidth * 7 + 6;
         const tiles = board.tiles.length >= 32 ? board.tiles : (WORLD_TILES as unknown as typeof board.tiles);
         const topLeftCorner = tiles[0]!;
         const topEdgeTiles = tiles.slice(1, 8);
@@ -143,15 +299,12 @@ export class BoardView {
                 return `[${colorOpen}{bold}${playerLabel(playersHere[0]!)}{/bold}${colorClose}]`;
             }
 
-            // ผู้เล่นหลายคนในช่องเดียวกัน: แสดงครบทุกคน (ย่อเป็น +N เฉพาะกรณีช่องแคบเกินไปจริง ๆ)
             const joinedLabels = playersHere.map(playerLabel).join(",");
             if (joinedLabels.length <= cellWidth) {
-                return playersHere
-                    .map(p => {
-                        const [colorOpen, colorClose] = playerColor(p);
-                        return `${colorOpen}{bold}${playerLabel(p)}{/bold}${colorClose}`;
-                    })
-                    .join(",");
+                return playersHere.map(p => {
+                    const [colorOpen, colorClose] = playerColor(p);
+                    return `${colorOpen}{bold}${playerLabel(p)}{/bold}${colorClose}`;
+                }).join(",");
             }
 
             const [colorOpen, colorClose] = playerColor(playersHere[0]!);
@@ -163,38 +316,49 @@ export class BoardView {
             return occupantMark ? padTagged(occupantMark, width) : " ".repeat(width);
         };
 
-        let propertyBarIndex = 0;
         const renderTopBottomSubtext = (tile: typeof tiles[0], width: number): string => {
             if (tile.type !== "property") return centerPlain(TILE_SUBTEXT[tile.type] ?? "", width);
             const dashLength = Math.max(3, width - 4);
-            const [colorOpen, colorClose] = PROPERTY_BAR_COLORS[propertyBarIndex++ % PROPERTY_BAR_COLORS.length]!;
-            return centerTagged(`${colorOpen}${"═".repeat(dashLength)}${colorClose}`, width);
+            const color = tile.color ?? "white";
+            return centerTagged(`{${color}-fg}${"═".repeat(dashLength)}{/${color}-fg}`, width);
         };
-        const renderCornerSubtext = (tile: typeof tiles[0]): string => centerPlain(tile.type === "start" ? "+200$" : tile.type === "parking" ? "FREE" : "", CORNER_WIDTH);
+
+        const renderCorner = (tile: typeof tiles[0]): string[] => cornerCard(tile.type, renderOccupants(tile.index, CORNER_WIDTH - 4), tall);
+        const blankTileCell = " ".repeat(tileWidth);
+        const blankRow = Array(7).fill(blankTileCell).join("│");
+
+        const buildEdgeRow = (leftCorner: typeof tiles[0], edgeTiles: typeof tiles, rightCorner: typeof tiles[0], occupantIndex: (i: number) => number): string[] => {
+            const left = renderCorner(leftCorner);
+            const right = renderCorner(rightCorner);
+            const names = edgeTiles.map(t => renderTileName(t, tileWidth)).join("│");
+            const bars = edgeTiles.map(t => renderTopBottomSubtext(t, tileWidth)).join("│");
+            const occupantCells = edgeTiles.map((_t, i) => renderOccupantCell(occupantIndex(i), tileWidth)).join("│");
+            return Array.from({ length: rowLines }, (_unused, r) => {
+                const middle = r === 0 ? names : r === 1 ? bars : r === rowLines - 1 ? occupantCells : blankRow;
+                return "│" + left[r] + "│" + middle + "│" + right[r] + "│";
+            });
+        };
 
         const cornerHorizontalLine = "─".repeat(CORNER_WIDTH);
-        const tileHorizontalLine = "─".repeat(TILE_WIDTH);
+        const tileHorizontalLine = "─".repeat(tileWidth);
         const topBorder = "┌" + cornerHorizontalLine + "┬" + Array(7).fill(tileHorizontalLine).join("┬") + "┬" + cornerHorizontalLine + "┐";
         const middleBorder = "├" + cornerHorizontalLine + "┼" + Array(7).fill(tileHorizontalLine).join("┼") + "┼" + cornerHorizontalLine + "┤";
         const bottomBorder = "└" + cornerHorizontalLine + "┴" + Array(7).fill(tileHorizontalLine).join("┴") + "┴" + cornerHorizontalLine + "┘";
 
-        // วางโลโก้กลางกระดาน (จัดกึ่งกลางทั้งแนวตั้งและแนวนอน)
         const colorDepth = (this.box.screen as unknown as { tput?: { colors?: number } } | undefined)?.tput?.colors ?? 8;
         const logoLines = getLogoLines(colorDepth);
         const logoTop = Math.max(0, Math.floor((CENTER_HEIGHT - logoLines.length) / 2));
         const centerLines: string[] = Array.from({ length: CENTER_HEIGHT }, (_unused, i) => {
             const logoLine = logoLines[i - logoTop];
-            return logoLine !== undefined ? centerTagged(logoLine, CENTER_WIDTH) : " ".repeat(CENTER_WIDTH);
+            return logoLine !== undefined ? centerTagged(logoLine, centerWidth) : " ".repeat(centerWidth);
         });
         let centerRow = 0;
-        const nextCenterLine = (): string => centerLines[centerRow++] ?? " ".repeat(CENTER_WIDTH);
+        const nextCenterLine = (): string => centerLines[centerRow++] ?? " ".repeat(centerWidth);
 
         const outputLines: string[] = [];
 
         outputLines.push(topBorder);
-        outputLines.push("│" + centerPlain(topLeftCorner.name, CORNER_WIDTH) + "│" + topEdgeTiles.map(t => renderTileName(t, TILE_WIDTH)).join("│") + "│" + centerPlain(topRightCorner.name, CORNER_WIDTH) + "│");
-        outputLines.push("│" + renderCornerSubtext(topLeftCorner) + "│" + topEdgeTiles.map(t => renderTopBottomSubtext(t, TILE_WIDTH)).join("│") + "│" + renderCornerSubtext(topRightCorner) + "│");
-        outputLines.push("│" + renderOccupantCell(0, CORNER_WIDTH) + "│" + topEdgeTiles.map((_t, i) => renderOccupantCell(i + 1, TILE_WIDTH)).join("│") + "│" + renderOccupantCell(8, CORNER_WIDTH) + "│");
+        outputLines.push(...buildEdgeRow(topLeftCorner, topEdgeTiles, topRightCorner, i => i + 1));
         outputLines.push(middleBorder);
 
         const sideRowSeparator = (center: string): string => "├" + cornerHorizontalLine + "│" + center + "│" + cornerHorizontalLine + "┤";
@@ -215,10 +379,7 @@ export class BoardView {
         }
 
         outputLines.push(middleBorder);
-
-        outputLines.push("│" + centerPlain(bottomLeftCorner.name, CORNER_WIDTH) + "│" + bottomEdgeTiles.map(t => renderTileName(t, TILE_WIDTH)).join("│") + "│" + centerPlain(bottomRightCorner.name, CORNER_WIDTH) + "│");
-        outputLines.push("│" + renderCornerSubtext(bottomLeftCorner) + "│" + bottomEdgeTiles.map(t => renderTopBottomSubtext(t, TILE_WIDTH)).join("│") + "│" + renderCornerSubtext(bottomRightCorner) + "│");
-        outputLines.push("│" + renderOccupantCell(24, CORNER_WIDTH) + "│" + bottomEdgeTiles.map((_t, i) => renderOccupantCell(23 - i, TILE_WIDTH)).join("│") + "│" + renderOccupantCell(16, CORNER_WIDTH) + "│");
+        outputLines.push(...buildEdgeRow(bottomLeftCorner, bottomEdgeTiles, bottomRightCorner, i => 23 - i));
         outputLines.push(bottomBorder);
 
         this.box.setContent(outputLines.join("\n"));
