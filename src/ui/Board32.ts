@@ -61,3 +61,4 @@ export const BOARD_32: TileDef[] = [
 export const BOARD_SIZE = BOARD_32.length;
 export const CORNERS = [0, 8, 16, 24] as const;
 export const isCorner = (idx: number) => CORNERS.includes(idx as typeof CORNERS[number]);
+

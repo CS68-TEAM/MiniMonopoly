@@ -385,3 +385,4 @@ export class BoardView {
         this.box.setContent(outputLines.join("\n"));
     }
 }
+
