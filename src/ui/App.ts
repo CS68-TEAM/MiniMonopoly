@@ -39,6 +39,7 @@ export class App {
     private game!: Game;
     private ais!: (EasyAI | NormalAI | HardAI)[];
     private busy = false;
+    private popupWaits: Promise<void>[] = [];
 
     constructor() {
         App.resizeConsole(195, 48);
@@ -280,12 +281,14 @@ export class App {
             bailChoice = await this.showJailPrompt(player);
         }
 
-        const dice = this.game.roll(player, bailChoice);
+        const dice = this.game.move(player, bailChoice);
         await this.diceView.animateRoll(dice || 1, () => this.screen.render());
         if (dice > 0) {
             await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
             await this.animateMovement(player, fromPos, dice);
         }
+        this.game.land();
+        await this.waitForPopups();
         this.render();
         await this.autoSave();
 
@@ -310,12 +313,14 @@ export class App {
             const aiPlayer = currentAi.player;
             const aiFromPos = aiPlayer.position;
 
-            const aiDice = currentAi.takeTurn(this.game);
+            const aiDice = currentAi.move(this.game);
 
-            if (typeof aiDice === "number" && aiDice > 0) {
+            if (aiDice > 0) {
                 await this.diceView.animateRoll(aiDice, () => this.screen.render());
                 await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
                 await this.animateMovement(aiPlayer, aiFromPos, aiDice);
+                currentAi.resolve(this.game);
+                await this.waitForPopups();
             }
             this.render();
             await this.autoSave();
@@ -438,10 +443,19 @@ export class App {
         });
     }
 
+    private async waitForPopups(): Promise<void> {
+        const waits = this.popupWaits;
+        this.popupWaits = [];
+        await Promise.all(waits);
+    }
+
     private showChancePopup(playerName: string, card: ChanceCard): void {
         const box = this.createPopup({width: "38%",height: "28%",label: " Chance ",color: "blue",content: [`{bold}{blue-fg}${playerName}{/blue-fg}{/bold}`,"",`{bold}{yellow-fg}${card.title}{/yellow-fg}{/bold}`,`${card.description}`].join("\n"),});
         const popupDurationMs = 1500 + Math.random() * 1500;
-        setTimeout(() => this.closePopup(box), popupDurationMs);
+        this.popupWaits.push(new Promise(resolve => setTimeout(() => {
+            this.closePopup(box);
+            resolve();
+        }, popupDurationMs)));
     }
 
     private showSellPrompt(): Promise<void> {
