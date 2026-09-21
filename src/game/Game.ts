@@ -22,6 +22,18 @@ export const TAKEOVER_LIMIT = 1;
 export const SELL_RATE = 0.3;
 export const TAX_RATE = 0.15;
 
+export function getBuyBlocker(player: Player, property: Property): string | null {
+    if (property.owner)
+        return "already owned";
+    if (player.money < property.price)
+        return "not enough money";
+    if (player.properties.length >= MAX_PROPERTIES)
+        return `max ${MAX_PROPERTIES} properties`;
+    if (player.purchaseCount >= MAX_DIRECT_PURCHASES)
+        return `max ${MAX_DIRECT_PURCHASES} purchases`;
+    return null;
+}
+
 export class Game {
     public readonly board = new Board();
     public readonly players: Player[];
@@ -33,6 +45,7 @@ export class Game {
     public pendingProperty: Property | null = null;
     public pendingTakeover: Property | null = null;
     public pendingDebt = false;
+    private landing: { player: Player; from: number; to: number; dice: number } | null = null;
     public onChance: OnChanceFn | null = null;
     private readonly log: EventLog;
 
@@ -45,7 +58,8 @@ export class Game {
     public get currentPlayer(): Player { return this.players[this.currentPlayerIndex]!; }
     public get activePlayers(): Player[] { return this.players.filter(p => p.status !== "bankrupt"); }
 
-    public roll(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+    public move(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+        this.landing = null;
         if (this.status === "finished") return 0;
         if (player.status === "bankrupt") return 0;
 
@@ -65,31 +79,49 @@ export class Game {
 
         const dice = rollDice();
         this.lastDice = dice;
-        const old = player.position;
-        const next = movePosition(old, dice, this.board.tiles.length);
-        if (next < old && next !== 0) {
+        const from = player.position;
+        const to = movePosition(from, dice, this.board.tiles.length);
+        player.position = to;
+        this.landing = { player, from, to, dice };
+        return dice;
+    }
+
+    public land(): void {
+        const landing = this.landing;
+        if (!landing) return;
+        this.landing = null;
+        const { player, from, to, dice } = landing;
+
+        if (to < from && to !== 0) {
             player.addMoney(200);
             this.log(`${player.name} passed START and collected $200.`);
         }
-        player.position = next;
-        this.log(`${player.name} rolled ${dice} and moved to ${this.board.getTile(next).name}.`);
-        const tile = this.board.getTile(next);
+        const tile = this.board.getTile(to);
+        this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
         this.landOnTile(player, tile);
 
-        if (this.pendingDebt) {
-            return dice;
-        }
+        if (this.pendingDebt)
+            return;
 
         this.checkBankruptcy(player);
         this.checkWinner();
 
-        const awaitingHumanDecision = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && !tile.property.owner;
-        if (awaitingHumanDecision) {
+        const landedOnFreeProperty = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && !tile.property.owner;
+        const blocker = landedOnFreeProperty ? this.buyBlocker(player, tile.property!) : null;
+        if (landedOnFreeProperty && blocker) {
+            this.log(`${player.name} can't buy ${tile.property!.name}: ${blocker}.`);
+        }
+        if (landedOnFreeProperty && !blocker) {
             this.pendingProperty = tile.property!;
         } else {
             this.pendingProperty = null;
             if (this.status === "playing") this.nextTurn();
         }
+    }
+
+    public roll(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+        const dice = this.move(player, humanBailChoice);
+        this.land();
         return dice;
     }
 
@@ -129,16 +161,20 @@ export class Game {
         }
     }
 
+    public buyBlocker(player: Player, property: Property): string | null {
+        return getBuyBlocker(player, property);
+    }
+
+    public canBuy(player: Player, property: Property): boolean {
+        return this.buyBlocker(player, property) === null;
+    }
+
     public buy(player: Player): boolean {
         const tile = this.board.getTile(player.position);
         if (tile.type !== "property" || !tile.property || tile.property.owner)
             return false;
         const property = tile.property;
-        if (player.money < property.price)
-            return false;
-        if (player.properties.length >= MAX_PROPERTIES)
-            return false;
-        if (player.purchaseCount >= MAX_DIRECT_PURCHASES)
+        if (!this.canBuy(player, property))
             return false;
  
         player.removeMoney(property.price);
