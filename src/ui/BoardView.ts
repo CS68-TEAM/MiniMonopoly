@@ -44,16 +44,6 @@ export const WORLD_TILES = [
     { index: 31, type: "tax", name: "Tax" },
 ] as const;
 
-const PROPERTY_BAR_COLORS: [string, string][] = [
-    ["{cyan-fg}", "{/cyan-fg}"],
-    ["{green-fg}", "{/green-fg}"],
-    ["{yellow-fg}", "{/yellow-fg}"],
-    ["{magenta-fg}", "{/magenta-fg}"],
-    ["{red-fg}", "{/red-fg}"],
-    ["{blue-fg}", "{/blue-fg}"],
-    ["{white-fg}", "{/white-fg}"],
-];
-
 const TILE_SUBTEXT: Record<string, string> = {
     start: "+200$",
     tax: "-15%",
@@ -326,12 +316,11 @@ export class BoardView {
             return occupantMark ? padTagged(occupantMark, width) : " ".repeat(width);
         };
 
-        let propertyBarIndex = 0;
         const renderTopBottomSubtext = (tile: typeof tiles[0], width: number): string => {
             if (tile.type !== "property") return centerPlain(TILE_SUBTEXT[tile.type] ?? "", width);
             const dashLength = Math.max(3, width - 4);
-            const [colorOpen, colorClose] = PROPERTY_BAR_COLORS[propertyBarIndex++ % PROPERTY_BAR_COLORS.length]!;
-            return centerTagged(`${colorOpen}${"═".repeat(dashLength)}${colorClose}`, width);
+            const color = tile.color ?? "white";
+            return centerTagged(`{${color}-fg}${"═".repeat(dashLength)}{/${color}-fg}`, width);
         };
 
         const renderCorner = (tile: typeof tiles[0]): string[] => cornerCard(tile.type, renderOccupants(tile.index, CORNER_WIDTH - 4), tall);
