@@ -5,8 +5,7 @@ import type { Property } from "./Property";
 import type { Tile, EventLog, OnChanceFn, GameStatus, RandomSource } from "./Types";
 //
 export function rollDice(random: RandomSource = Math.random): number {
-    const roll = random() * 6;
-    return Math.floor(roll) + 1;
+    return Math.floor(random() * 6) + 1;
 }
 
 export function movePosition(position: number, steps: number, boardSize: number): number {
@@ -57,7 +56,7 @@ export class Game {
             if (wantsBail && player.money >= JAIL_BAIL_AMOUNT) {
                 player.removeMoney(JAIL_BAIL_AMOUNT);
                 player.status = "active";
-                this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail immediately.`);
+                this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail.`);
             } else {
                 player.status = "active";
                 this.log(`${player.name} leaves Jail.`);
@@ -72,7 +71,7 @@ export class Game {
         const next = movePosition(old, dice, this.board.tiles.length);
         if (next < old && next !== 0) {
             player.addMoney(START_BONUS);
-            this.log(`${player.name} passed START and collected $${START_BONUS}.`);
+            this.log(`${player.name} passed START and collected $${START_BONUS}!.`);
         }
         player.position = next;
         this.log(`${player.name} rolled ${dice} and moved to ${this.board.getTile(next).name}.`);
