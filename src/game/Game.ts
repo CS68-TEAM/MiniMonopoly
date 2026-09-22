@@ -70,7 +70,7 @@ export class Game {
             if (wantsBail && player.money >= JAIL_BAIL_AMOUNT) {
                 player.removeMoney(JAIL_BAIL_AMOUNT);
                 player.status = "active";
-                this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail.`);
+               this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail.`);
             } else {
                 player.status = "active";
                 this.log(`${player.name} leaves Jail.`);
@@ -96,7 +96,11 @@ export class Game {
 
         if (to < from && to !== 0) {
             player.addMoney(200);
+<<<<<<< HEAD
             this.log(`${player.name} passed START and collected $${START_BONUS}.`);
+=======
+            this.log(`${player.name} passed START and collected $${START_BONUS}!.`);
+>>>>>>> 1b694ba5f0220a50d6e0fe26e625962b94d8f040
         }
         const tile = this.board.getTile(to);
         this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
