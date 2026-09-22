@@ -247,7 +247,7 @@ function renderTileName( tile: { name: string; type: string; property?: { owner?
 }
 
 export class BoardView {
-    public readonly box = blessed.box({ label: " WORLD MONOPOLY   ·   [?] Controls ", border: { type: "line" }, style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } }, tags: true, align: "center" as const, valign: "middle" as const, padding: { left: 1, right: 1, top: 0, bottom: 0 },});
+    public readonly box = blessed.box({ label: " WORLD MONOPOLY ", border: { type: "line" }, style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } }, tags: true, align: "center" as const, valign: "middle" as const, padding: { left: 1, right: 1, top: 0, bottom: 0 },});
 
     private hasRoomForTallCorners(): boolean {
         try {
