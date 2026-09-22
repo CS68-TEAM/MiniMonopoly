@@ -7,14 +7,16 @@ export class EasyAI {
         player.decideJail = () => false;
     }
 
-    public takeTurn(game: Game): number {
-        const dice = game.roll(this.player);
-        if (dice === 0)
-            return dice;
+    public move(game: Game): number {
+        return game.move(this.player);
+    }
+
+    public resolve(game: Game): void {
+        game.land();
 
         const tile = game.board.getTile(this.player.position);
         if (tile.type !== "property" || !tile.property)
-            return dice;
+            return;
 
         const property = tile.property;
         if (!property.owner) {
@@ -27,7 +29,13 @@ export class EasyAI {
                 game.takeOver(this.player, property.id, offer);
             }
         }
+    }
 
+    public takeTurn(game: Game): number {
+        const dice = this.move(game);
+        if (dice > 0)
+            this.resolve(game);
         return dice;
     }
 }
+
