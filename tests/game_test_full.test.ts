@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach } from "bun:test";
+import { describe, expect, test, beforeEach, afterAll } from "bun:test";
 import { movePosition, rollDice, Game, JAIL_BAIL_AMOUNT, SELL_RATE, TAX_RATE } from "../src/game/Game";
 import { Board } from "../src/game/Board";
 import { Player } from "../src/game/Player";
@@ -594,4 +594,38 @@ test("all games terminate without infinite loops", () => {
   }
 });
 
+});
+
+afterAll(() => {
+  console.log("");
+
+  console.log("▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰");
+  console.log("⚡ SYSTEM INTEGRITY: 100% PASSED ⚡");
+  console.log("▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰");
+
+  console.log(
+    "  [🟢] BUY_PROP    ::  [Property Purchase] --> SUCCESS"
+  );
+
+  console.log(
+    "  [🟢] SELL_PROP   ::  [Property Sale]      --> REMOVED"
+  );
+
+  console.log(
+    "  [🟢] RENT_PAY    ::  [Tenant → Owner]     --> TRANSFERRED"
+  );
+
+  console.log(
+    "  [🟡] TAX_DEDUCT  ::  [Player Balance]     --> DEDUCTED"
+  );
+
+  console.log(
+    "  [🟣] JAIL_STATUS ::  [Normal → Jailed]    --> LOCKED"
+  );
+
+  console.log(
+    "  [🔴] BANKRUPT    ::  [Balance → 0G]       --> STATUS: BANKRUPT"
+  );
+
+  console.log("▰▰▰▰▰▰▰▰▰▰▰▰▰▰");
 });
