@@ -611,69 +611,65 @@ afterAll(() => {
     console.log(`\n${BOLD}${CYAN}${title}${RESET}`);
   };
 
+  const line = (label: string, value: string, color = WHITE) => {
+    console.log(`    ${label.padEnd(22, " ")} : ${color}${value}${RESET}`);
+  };
+
   const passed = () => {
-    console.log(`    └─ STATUS             : ${GREEN}✅ PASSED${RESET}`);
+    line("STATUS", "PASSED", GREEN);
   };
 
   console.clear();
 
-  console.log(`${BOLD}${BLUE}🎮  GAME FLOW TEST${RESET}`);
-  console.log(`${GRAY}    Mini Monopoly • v1.0${RESET}`);
+  console.log(`${BOLD}${BLUE}GAME FLOW TEST${RESET}`);
+  console.log(`${GRAY}    Mini Monopoly - v1.0${RESET}`);
 
-  section("⚡ SYSTEM STATUS");
+  section("SYSTEM STATUS");
+  line("ENGINE", "ONLINE", GREEN);
+  line("GAME CORE", "READY", GREEN);
+  line("TEST SUITE", "RUNNING", YELLOW);
 
-  console.log(`   ${GREEN}ENGINE${RESET}      : ONLINE`);
-  console.log(`   ${GREEN}GAME CORE${RESET}   : READY`);
-  console.log(`   ${YELLOW}TEST SUITE${RESET}  : RUNNING`);
-
-  section("🏠  [01] BUY PROPERTY");
-
-  console.log(`    ├─ เงินก่อนซื้อ       : ${YELLOW}${money(1000)}${RESET}`);
-  console.log(`    ├─ ราคาทรัพย์สิน      : ${YELLOW}${money(200)}${RESET}`);
-  console.log(`    ├─ เงินคงเหลือ        : ${YELLOW}${money(800)}${RESET}`);
-  console.log(`    ├─ ซื้อ Property      : ${GREEN}สำเร็จ${RESET}`);
+  section("[01] BUY PROPERTY");
+  line("เงินก่อนซื้อ", money(1000), YELLOW);
+  line("ราคาทรัพย์สิน", money(200), YELLOW);
+  line("เงินคงเหลือ", money(800), YELLOW);
+  line("ซื้อ Property", "สำเร็จ", GREEN);
   passed();
 
-  section("💰  [02] SELL PROPERTY");
-
-  console.log(`    ├─ ราคาซื้อ           : ${YELLOW}${money(200)}${RESET}`);
-  console.log(`    ├─ ราคาขายคืน         : ${YELLOW}${money(40)}${RESET}`);
-  console.log(`    ├─ Property ถูกนำออก  : ${GREEN}สำเร็จ${RESET}`);
+  section("[02] SELL PROPERTY");
+  line("ราคาซื้อ", money(200), YELLOW);
+  line("ราคาขายคืน", money(40), YELLOW);
+  line("Property ถูกนำออก", "สำเร็จ", GREEN);
   passed();
 
-  section("🏦  [03] RENT");
-
-  console.log(`    ├─ ผู้เช่าจ่าย         : ${YELLOW}${money(100)}${RESET}`);
-  console.log(`    ├─ เจ้าของได้รับ       : ${YELLOW}${money(100)}${RESET}`);
-  console.log(`    ├─ จ่ายค่าเช่า        : ${GREEN}สำเร็จ${RESET}`);
+  section("[03] RENT");
+  line("ผู้เช่าจ่าย", money(100), YELLOW);
+  line("เจ้าของได้รับ", money(100), YELLOW);
+  line("จ่ายค่าเช่า", "สำเร็จ", GREEN);
   passed();
 
-  section("🧾  [04] TAX");
-
-  console.log(`    ├─ เงินก่อนจ่ายภาษี   : ${YELLOW}${money(1000)}${RESET}`);
-  console.log(`    ├─ เงินหลังจ่ายภาษี   : ${YELLOW}${money(900)}${RESET}`);
-  console.log(`    ├─ ภาษีที่หัก         : ${YELLOW}${money(100)}${RESET}`);
+  section("[04] TAX");
+  line("เงินก่อนจ่ายภาษี", money(1000), YELLOW);
+  line("เงินหลังจ่ายภาษี", money(900), YELLOW);
+  line("ภาษีที่หัก", money(100), YELLOW);
   passed();
 
-  section("🔒  [05] JAIL");
-
-  console.log(`    ├─ สถานะก่อน          : ${WHITE}ปกติ${RESET}`);
-  console.log(`    ├─ สถานะหลัง          : ${RED}ติดคุก${RESET}`);
+  section("[05] JAIL");
+  line("สถานะก่อน", "ปกติ", WHITE);
+  line("สถานะหลัง", "ติดคุก", RED);
   passed();
 
-  section("💀  [06] BANKRUPTCY");
-
-  console.log(`    ├─ เงินคงเหลือ        : ${YELLOW}${money(0)}${RESET}`);
-  console.log(`    ├─ สถานะ              : ${RED}bankrupt${RESET}`);
+  section("[06] BANKRUPTCY");
+  line("เงินคงเหลือ", money(0), YELLOW);
+  line("สถานะ", "bankrupt", RED);
   passed();
 
-  section("🚀  TEST EXECUTION SUMMARY");
+  section("TEST EXECUTION SUMMARY");
+  line("TOTAL", "6", WHITE);
+  line("PASSED", "6", GREEN);
+  line("FAILED", "0", RED);
+  line("SUCCESS", "100%", GREEN);
 
-  console.log(`\n    TOTAL       : ${WHITE}6${RESET}`);
-  console.log(`    PASSED      : ${GREEN}6${RESET}`);
-  console.log(`    FAILED      : ${RED}0${RESET}`);
-  console.log(`    SUCCESS     : ${GREEN}100%${RESET}`);
-
-  console.log(`\n    ${BOLD}${GREEN}✅ ALL TESTS PASSED${RESET}`);
-  console.log(`    ${CYAN}🎯 BUILD STATUS : STABLE${RESET}\n`);
+  console.log(`\n    ${BOLD}${GREEN}ALL TESTS PASSED${RESET}`);
+  console.log(`    ${CYAN}BUILD STATUS : STABLE${RESET}\\n`);
 });
