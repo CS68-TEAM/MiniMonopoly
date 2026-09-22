@@ -1,47 +1,64 @@
-import type { TileDef } from "../game/Types";
+import type { TileDef, TileColor } from "../game/Types";
+
+export const COLOR_TIERS: Record<TileColor, { readonly price: number; readonly rent: number }> = {
+    cyan:    { price: 500,  rent: 175  },
+    green:   { price: 1000, rent: 350  },
+    yellow:  { price: 1500, rent: 525  },
+    magenta: { price: 2000, rent: 700  },
+    red:     { price: 2500, rent: 875  },
+    blue:    { price: 3000, rent: 1050 },
+};
+
+const prop = (index: number, name: string, color: TileColor): TileDef => ({
+    index, type: "property", name, color,
+    price: COLOR_TIERS[color].price,
+    rent: COLOR_TIERS[color].rent,
+    isCorner: false,
+});
 
 export const BOARD_32: TileDef[] = [
-    { index: 0,  type: "start", name: "GO",           rent: 0,    price: 0,    isCorner: true },
+    { index: 0,  type: "start", name: "GO", rent: 0, price: 0, isCorner: true },
 
-    { index: 1,  type: "property", name: "Bangkok",   rent: 175,  price: 500,  isCorner: false },
-    { index: 2,  type: "property", name: "Hanoi",     rent: 175,  price: 500,  isCorner: false },
-    { index: 3,  type: "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
-    { index: 4,  type: "property", name: "Jakarta",   rent: 175,  price: 500,  isCorner: false },
-    { index: 5,  type: "property", name: "Manila",    rent: 175,  price: 500,  isCorner: false },
-    { index: 6,  type: "tax",      name: "Tax",       rent: 0,    price: 0,    isCorner: false },
-    { index: 7,  type: "property", name: "Oslo",      rent: 350,  price: 1000, isCorner: false },
+    prop(1,  "Bangkok",  "cyan"),
+    prop(2,  "Hanoi",    "yellow"),
+    { index: 3,  type:   "chance",   name: "Chance", rent: 0, price: 0, isCorner: false },
+    prop(4,  "Jakarta",  "magenta"),
+    prop(5,  "Manila",   "green"),
+    { index: 6,  type:   "tax", name: "Tax", rent: 0, price: 0, isCorner: false },
+    prop(7,  "Oslo",     "blue"),
 
-    { index: 8,  type: "jail",     name: "JAIL",      rent: 0,    price: 0,    isCorner: true },
+    { index: 8, type:    "jail", name: "JAIL", rent: 0, price: 0, isCorner: true },
 
-    { index: 9,  type: "property", name: "Tokyo",     rent: 350,  price: 1000, isCorner: false },
-    { index: 10, type: "property", name: "Seoul",     rent: 350,  price: 1000, isCorner: false },
-    { index: 11, type: "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
-    { index: 12, type: "property", name: "Beijing",   rent: 350,  price: 1000, isCorner: false },
-    { index: 13, type: "property", name: "Shanghai",  rent: 525,  price: 1500, isCorner: false },
-    { index: 14, type: "property", name: "HongKong",  rent: 525,  price: 1500, isCorner: false },
-    { index: 15, type: "property", name: "Taipei",    rent: 525,  price: 1500, isCorner: false },
+    prop(9,  "Tokyo",    "red"),
+    prop(10, "Seoul",    "blue"),
+    { index: 11, type:   "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
+    prop(12, "Beijing",  "green"),
+    prop(13, "Shanghai", "magenta"),
+    prop(14, "HongKong", "cyan"),
+    prop(15, "Taipei",   "yellow"),
 
-    { index: 16, type: "parking",  name: "Free Park", rent: 0,    price: 0,    isCorner: true },
+    { index: 16, type:   "parking",  name: "Free Park", rent: 0,    price: 0,    isCorner: true },
 
-    { index: 17, type: "property", name: "Sydney",    rent: 525,  price: 1500, isCorner: false },
-    { index: 18, type: "property", name: "Auckland",  rent: 700,  price: 2000, isCorner: false },
-    { index: 19, type: "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
-    { index: 20, type: "property", name: "Mumbai",    rent: 700,  price: 2000, isCorner: false },
-    { index: 21, type: "property", name: "Delhi",     rent: 700,  price: 2000, isCorner: false },
-    { index: 22, type: "property", name: "Dubai",     rent: 700,  price: 2000, isCorner: false },
-    { index: 23, type: "property", name: "Istanbul",  rent: 875,  price: 2500, isCorner: false },
+    prop(17, "Sydney",   "cyan"),
+    prop(18, "Auckland", "yellow"),
+    { index: 19, type:   "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
+    prop(20, "Mumbai",   "magenta"),
+    prop(21, "Delhi",    "green"),
+    prop(22, "Dubai",    "blue"),
+    prop(23, "Istanbul", "red"),
 
-    { index: 24, type: "goToJail", name: "Go Jail",   rent: 0,    price: 0,    isCorner: true },
+    { index: 24, type:   "goToJail", name: "Go Jail",   rent: 0,    price: 0,    isCorner: true },
 
-    { index: 25, type: "property", name: "London",    rent: 875,  price: 2500, isCorner: false },
-    { index: 26, type: "property", name: "Paris",     rent: 875,  price: 2500, isCorner: false },
-    { index: 27, type: "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
-    { index: 28, type: "property", name: "Berlin",    rent: 875,  price: 2500, isCorner: false },
-    { index: 29, type: "property", name: "Rome",      rent: 1050, price: 3000, isCorner: false },
-    { index: 30, type: "property", name: "Madrid",    rent: 1050, price: 3000, isCorner: false },
-    { index: 31, type: "tax",      name: "Tax",       rent: 0,    price: 0,    isCorner: false },
+    prop(25, "London",   "green"),
+    prop(26, "Paris",    "magenta"),
+    { index: 27, type:   "chance",   name: "Chance",    rent: 0,    price: 0,    isCorner: false },
+    prop(28, "Berlin",   "cyan"),
+    prop(29, "Rome",     "yellow"),
+    prop(30, "Madrid",   "red"),
+    { index: 31, type:   "tax",      name: "Tax",       rent: 0,    price: 0,    isCorner: false },
 ];
 
 export const BOARD_SIZE = BOARD_32.length;
 export const CORNERS = [0, 8, 16, 24] as const;
 export const isCorner = (idx: number) => CORNERS.includes(idx as typeof CORNERS[number]);
+
