@@ -148,6 +148,7 @@ export class Game {
                 break;
             case "jail":
             case "goToJail":
+                player.position = 8;
                 player.status = "jailed";
                 this.log(`${player.name} is sent to Jail.`);
                 break;
@@ -302,7 +303,7 @@ export class Game {
         if (player.money < 0) this.coverDebt(player);
     }
 
-  private drawChance(player: Player): void {
+private drawChance(player: Player): void {
     const card = pickChanceEvent();
 
     this.onChance?.(player, card);
@@ -315,10 +316,17 @@ export class Game {
                 this.board.tiles.length
             );
         },
-        payTax: (p, amount) => this.pay(p, amount, "tax"),
+
+        payTax: (p, amount) => {
+            this.pay(p, amount, "tax");
+        },
     });
 
     this.log(`- Chance: ${message}`);
+
+    const tile = this.board.tiles[player.position];
+
+    this.landOnTile(player, tile);
 }
 
     private coverDebt(player: Player): void {
