@@ -302,15 +302,24 @@ export class Game {
         if (player.money < 0) this.coverDebt(player);
     }
 
-    private drawChance(player: Player): void {
-        const card = pickChanceEvent();
-        this.log(`- Chance: ${card.description}`);
-        this.onChance?.(player, card);
-        card.apply(player, {
-            move: (p, steps) => { p.position = movePosition(p.position, steps, this.board.tiles.length); },
-            payTax: (p, amount) => this.pay(p, amount, "tax"),
-        });
-    }
+  private drawChance(player: Player): void {
+    const card = pickChanceEvent();
+
+    this.onChance?.(player, card);
+
+    const message = card.apply(player, {
+        move: (p, steps) => {
+            p.position = movePosition(
+                p.position,
+                steps,
+                this.board.tiles.length
+            );
+        },
+        payTax: (p, amount) => this.pay(p, amount, "tax"),
+    });
+
+    this.log(`- Chance: ${message}`);
+}
 
     private coverDebt(player: Player): void {
         if (player.id === "human" && player.properties.length > 0) {
