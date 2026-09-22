@@ -3,18 +3,21 @@ import { pickChanceEvent } from "./Chance";
 import { Player } from "./Player";
 import type { Property } from "./Property";
 import type { Tile, EventLog, OnChanceFn, GameStatus, RandomSource } from "./Types";
-//
+
 export function rollDice(random: RandomSource = Math.random): number {
-    return Math.floor(random()*6) + 1;
+    const roll = random() * 6;
+    return Math.floor(roll) + 1;
 }
 
 export function movePosition(position: number, steps: number, boardSize: number): number {
     const raw = (position + steps) % boardSize;
     return (raw + boardSize) % boardSize;
 }
+
 export function getTakeOverPrice(property:Property){
     return Math.ceil(property.price * TAKEOVER_MULTIPLIER);
 }
+
 export const START_BONUS = 200;
 export const JAIL_BAIL_AMOUNT = 250;
 export const TAKEOVER_MULTIPLIER = 1.5;
@@ -70,7 +73,7 @@ export class Game {
             if (wantsBail && player.money >= JAIL_BAIL_AMOUNT) {
                 player.removeMoney(JAIL_BAIL_AMOUNT);
                 player.status = "active";
-               this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail.`);
+                this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail immediately.`);
             } else {
                 player.status = "active";
                 this.log(`${player.name} leaves Jail.`);
@@ -96,11 +99,7 @@ export class Game {
 
         if (to < from && to !== 0) {
             player.addMoney(200);
-<<<<<<< HEAD
-            this.log(`${player.name} passed START and collected $${START_BONUS}.`);
-=======
-            this.log(`${player.name} passed START and collected $${START_BONUS}!.`);
->>>>>>> 1b694ba5f0220a50d6e0fe26e625962b94d8f040
+            this.log(`${player.name} passed START and collected $200.`);
         }
         const tile = this.board.getTile(to);
         this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
@@ -201,7 +200,7 @@ export class Game {
         return true;
     }
 
-        //เเก้ logic ให้สามารถ check takeovercount ได้ด้วย
+    //เเก้ logic ให้สามารถ check takeovercount ได้ด้วย
     public takeOver(buyer: Player, propertyId: number, offer: number): boolean {
         const property = this.board.findPropertyById(propertyId);
         if (buyer.properties.length >= MAX_PROPERTIES) return false;
@@ -229,7 +228,7 @@ export class Game {
         return true;
     }
     
-        //เเก้ทำให้ check properties ถ้ามากว่า max_property return false;
+    //เเก้ทำให้ check properties ถ้ามากว่า max_property return false;
     public startTakeover(propertyId: number): boolean {
         const property = this.board.findPropertyById(propertyId);
         if (!property || !property.owner || property.owner.id === "human") return false;
