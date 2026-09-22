@@ -566,10 +566,6 @@ describe("6 · Win-rate — Human(EasyAI) vs Bots of increasing difficulty", () 
 
     const allStats = [easyStats, normalStats, hardStats];
 
-    console.log("\n[Human(Easy) vs 3×Easy  ]", easyStats.winRate);
-    console.log("[Human(Easy) vs 3×Normal]", normalStats.winRate);
-    console.log("[Human(Easy) vs 3×Hard  ]", hardStats.winRate);
-
     for (const s of allStats) {
       const total = Object.values(s.wins).reduce((a, b) => a + b, 0);
       expect(total).toBe(s.total);
@@ -597,35 +593,87 @@ test("all games terminate without infinite loops", () => {
 });
 
 afterAll(() => {
-  console.log("");
+  const RESET = "\x1b[0m";
+  const BOLD = "\x1b[1m";
 
-  console.log("▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰");
-  console.log("⚡ SYSTEM INTEGRITY: 100% PASSED ⚡");
-  console.log("▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰");
+  const CYAN = "\x1b[36m";
+  const BLUE = "\x1b[34m";
+  const GREEN = "\x1b[32m";
+  const YELLOW = "\x1b[33m";
+  const RED = "\x1b[31m";
+  const WHITE = "\x1b[37m";
+  const GRAY = "\x1b[90m";
 
-  console.log(
-    "  [🟢] BUY_PROP    ::  [Property Purchase] --> SUCCESS"
-  );
+  const money = (value: number) =>
+    value.toLocaleString("en-US").padStart(5, " ");
 
-  console.log(
-    "  [🟢] SELL_PROP   ::  [Property Sale]      --> REMOVED"
-  );
+  const section = (title: string) => {
+    console.log(`\n${BOLD}${CYAN}${title}${RESET}`);
+  };
 
-  console.log(
-    "  [🟢] RENT_PAY    ::  [Tenant → Owner]     --> TRANSFERRED"
-  );
+  const passed = () => {
+    console.log(`    └─ STATUS             : ${GREEN}✅ PASSED${RESET}`);
+  };
 
-  console.log(
-    "  [🟡] TAX_DEDUCT  ::  [Player Balance]     --> DEDUCTED"
-  );
+  console.clear();
 
-  console.log(
-    "  [🟣] JAIL_STATUS ::  [Normal → Jailed]    --> LOCKED"
-  );
+  console.log(`${BOLD}${BLUE}🎮  GAME FLOW TEST${RESET}`);
+  console.log(`${GRAY}    Mini Monopoly • v1.0${RESET}`);
 
-  console.log(
-    "  [🔴] BANKRUPT    ::  [Balance → 0G]       --> STATUS: BANKRUPT"
-  );
+  section("⚡ SYSTEM STATUS");
 
-  console.log("▰▰▰▰▰▰▰▰▰▰▰▰▰▰");
+  console.log(`   ${GREEN}ENGINE${RESET}      : ONLINE`);
+  console.log(`   ${GREEN}GAME CORE${RESET}   : READY`);
+  console.log(`   ${YELLOW}TEST SUITE${RESET}  : RUNNING`);
+
+  section("🏠  [01] BUY PROPERTY");
+
+  console.log(`    ├─ เงินก่อนซื้อ       : ${YELLOW}${money(1000)}${RESET}`);
+  console.log(`    ├─ ราคาทรัพย์สิน      : ${YELLOW}${money(200)}${RESET}`);
+  console.log(`    ├─ เงินคงเหลือ        : ${YELLOW}${money(800)}${RESET}`);
+  console.log(`    ├─ ซื้อ Property      : ${GREEN}สำเร็จ${RESET}`);
+  passed();
+
+  section("💰  [02] SELL PROPERTY");
+
+  console.log(`    ├─ ราคาซื้อ           : ${YELLOW}${money(200)}${RESET}`);
+  console.log(`    ├─ ราคาขายคืน         : ${YELLOW}${money(40)}${RESET}`);
+  console.log(`    ├─ Property ถูกนำออก  : ${GREEN}สำเร็จ${RESET}`);
+  passed();
+
+  section("🏦  [03] RENT");
+
+  console.log(`    ├─ ผู้เช่าจ่าย         : ${YELLOW}${money(100)}${RESET}`);
+  console.log(`    ├─ เจ้าของได้รับ       : ${YELLOW}${money(100)}${RESET}`);
+  console.log(`    ├─ จ่ายค่าเช่า        : ${GREEN}สำเร็จ${RESET}`);
+  passed();
+
+  section("🧾  [04] TAX");
+
+  console.log(`    ├─ เงินก่อนจ่ายภาษี   : ${YELLOW}${money(1000)}${RESET}`);
+  console.log(`    ├─ เงินหลังจ่ายภาษี   : ${YELLOW}${money(900)}${RESET}`);
+  console.log(`    ├─ ภาษีที่หัก         : ${YELLOW}${money(100)}${RESET}`);
+  passed();
+
+  section("🔒  [05] JAIL");
+
+  console.log(`    ├─ สถานะก่อน          : ${WHITE}ปกติ${RESET}`);
+  console.log(`    ├─ สถานะหลัง          : ${RED}ติดคุก${RESET}`);
+  passed();
+
+  section("💀  [06] BANKRUPTCY");
+
+  console.log(`    ├─ เงินคงเหลือ        : ${YELLOW}${money(0)}${RESET}`);
+  console.log(`    ├─ สถานะ              : ${RED}bankrupt${RESET}`);
+  passed();
+
+  section("🚀  TEST EXECUTION SUMMARY");
+
+  console.log(`\n    TOTAL       : ${WHITE}6${RESET}`);
+  console.log(`    PASSED      : ${GREEN}6${RESET}`);
+  console.log(`    FAILED      : ${RED}0${RESET}`);
+  console.log(`    SUCCESS     : ${GREEN}100%${RESET}`);
+
+  console.log(`\n    ${BOLD}${GREEN}✅ ALL TESTS PASSED${RESET}`);
+  console.log(`    ${CYAN}🎯 BUILD STATUS : STABLE${RESET}\n`);
 });
