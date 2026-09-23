@@ -14,6 +14,7 @@ import { DiceView } from "./DiceView";
 import { PropertyInfo } from "./PropertyInfo";
 import { Property } from "../game/Property";
 import { writeSave, readSave } from "../save";
+import { playSound, SOUNDS, closeSoundManager } from "../utils/SoundManager";
 
 const SAVE_FILE = "save.json";
 const MOVE_STEP_DELAY_MS = 200;
@@ -115,7 +116,7 @@ export class App {
             this.screen.onceKey("2", resumeGame);
             this.screen.onceKey("r", resumeGame);
         }
-        this.screen.key(["q", "C-c"], () => process.exit(0));
+        this.screen.key(["q", "C-c"], () => { closeSoundManager(); process.exit(0); });
     }
 
     private loadGame(save: SaveData): void {
@@ -184,6 +185,8 @@ export class App {
             new HardAI(players[3]!),
         ];
 
+        playSound(SOUNDS.gameStart);
+
         this.layout();
         this.bindKeys();
         this.render();
@@ -241,7 +244,7 @@ export class App {
     }
 
     private bindKeys(): void {
-        this.screen.key(["q", "C-c"], () => process.exit(0));
+        this.screen.key(["q", "C-c"], () => { closeSoundManager(); process.exit(0); });
         this.screen.key(["enter", "r"], () => { void this.doRoll(); });
 
         this.screen.key(["b"], () => {
@@ -288,6 +291,7 @@ export class App {
         const dice = this.game.move(player, bailChoice);
         await this.diceView.animateRoll(dice || 1, () => this.screen.render());
         if (dice > 0) {
+            playSound(SOUNDS.dice(dice));
             await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
             await this.animateMovement(player, fromPos, dice);
         }
@@ -321,6 +325,7 @@ export class App {
 
             if (aiDice > 0) {
                 await this.diceView.animateRoll(aiDice, () => this.screen.render());
+                playSound(SOUNDS.dice(aiDice));
                 await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
                 await this.animateMovement(aiPlayer, aiFromPos, aiDice);
                 currentAi.resolve(this.game);
@@ -520,5 +525,3 @@ export class App {
         };
     }
 }
-
-

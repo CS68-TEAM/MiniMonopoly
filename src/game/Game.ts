@@ -2,6 +2,7 @@ import { Board } from "./Board";
 import { pickChanceEvent } from "./Chance";
 import { Player } from "./Player";
 import type { Property } from "./Property";
+import { playSound, SOUNDS } from "../utils/SoundManager";
 import type { Tile, EventLog, OnChanceFn, GameStatus, RandomSource } from "./Types";
 
 export function rollDice(random: RandomSource = Math.random): number {
@@ -211,6 +212,7 @@ export class Game {
         player.addProperty(property);
         player.purchaseCount++;
         this.log(`${player.name} bought ${property.name} for $${property.price}.`);
+        playSound(SOUNDS.buyProperty);
         return true;
     }
 
@@ -251,6 +253,7 @@ export class Game {
         buyer.addProperty(property);
         buyer.takeoverCount++;
         this.log(`? ${buyer.name} took over ${property.name} from ${seller.name} for $${offer}!`);
+        playSound(SOUNDS.noProperty);
         return true;
     }
     
@@ -287,6 +290,10 @@ export class Game {
             next = (next + 1) % this.players.length;
         } while (this.players[next]!.status === "bankrupt");
         this.currentPlayerIndex = next;
+
+        if (this.status === "playing" && this.players[next]!.id === "human") {
+            playSound(SOUNDS.yourTurn);
+        }
     }
 
     public checkWinner(): Player | null { 
@@ -318,6 +325,7 @@ export class Game {
         player.removeMoney(amount);
         owner.addMoney(paid);
         this.log(`${player.name} paid $${paid} rent to ${owner.name}.`);
+        playSound(SOUNDS.payMoney);
         if (player.money < 0) this.coverDebt(player);
     }
 
@@ -404,6 +412,9 @@ private drawChance(player: Player): void {
         player.money = 0;
         player.status = "bankrupt";
         this.log(`* ${player.name} is BANKRUPT!`);
+        if (player.id === "human") {
+            playSound(SOUNDS.lost);
+        }
     }
 
     private checkBankruptcy(player: Player): void {
