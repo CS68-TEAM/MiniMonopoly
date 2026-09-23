@@ -39,9 +39,10 @@ export class App {
     private game!: Game;
     private ais!: (EasyAI | NormalAI | HardAI)[];
     private busy = false;
+    private popupWaits: Promise<void>[] = [];
 
     constructor() {
-        App.resizeConsole(195, 46);
+        App.resizeConsole(195, 48);
         this.screen = blessed.screen({ smartCSR: true, title: "Mini Monopoly TUI" });
         this.boardView = new BoardView();
         this.playerView = new PlayerView();
@@ -186,35 +187,23 @@ export class App {
     }
 
     private layout(): void {
+        const MENU_HEIGHT = 3;
+        
         this.boardView.box.top = 0;
         this.boardView.box.left = 0;
         this.boardView.box.width = "72%";
-        this.boardView.box.height = "92%";
+        this.boardView.box.height = `100%-${MENU_HEIGHT}`;
 
-        this.playerView.box.top = 0;
-        this.playerView.box.left = "72%";
-        this.playerView.box.width = "28%";
-        this.playerView.box.height = "18%";
+        this.layoutRightColumn();
+        this.screen.on("resize", () => {
+            this.layoutRightColumn();
+            this.render();
+        });
 
-        this.propertyInfo.box.top = "18%";
-        this.propertyInfo.box.left = "72%";
-        this.propertyInfo.box.width = "28%";
-        this.propertyInfo.box.height = "20%";
-
-        this.gameLog.box.top = "38%";
-        this.gameLog.box.left = "72%";
-        this.gameLog.box.width = "28%";
-        this.gameLog.box.height = "26%";
-
-        this.diceView.box.top = "64%";
-        this.diceView.box.left = "72%";
-        this.diceView.box.width = "28%";
-        this.diceView.box.height = "36%";
-
-        this.actionMenu.box.top = "92%";
+        this.actionMenu.box.top = `100%-${MENU_HEIGHT}`;
         this.actionMenu.box.left = 0;
         this.actionMenu.box.width = "72%";
-        this.actionMenu.box.height = "8%";
+        this.actionMenu.box.height = MENU_HEIGHT;
 
         this.screen.append(this.boardView.box);
         this.screen.append(this.playerView.box);
@@ -222,6 +211,29 @@ export class App {
         this.screen.append(this.gameLog.box);
         this.screen.append(this.diceView.box);
         this.screen.append(this.actionMenu.box);
+        this.diceView.render(0);
+    }
+
+    private layoutRightColumn(): void {
+        const rows = Number(this.screen.height);
+        const parts: [blessed.Widgets.BoxElement, number][] = [
+            [this.playerView.box, 15],
+            [this.propertyInfo.box, 20],
+            [this.gameLog.box, 40],
+            [this.diceView.box, 25],
+        ];
+
+        let top = 0;
+        let accumulated = 0;
+        for (const [box, weight] of parts) {
+            accumulated += weight;
+            const bottom = Math.round(rows * accumulated / 100);
+            box.top = top;
+            box.left = "72%";
+            box.width = "28%";
+            box.height = bottom - top;
+            top = bottom;
+        }
     }
 
     private bindKeys(): void {
@@ -269,12 +281,14 @@ export class App {
             bailChoice = await this.showJailPrompt(player);
         }
 
-        const dice = this.game.roll(player, bailChoice);
+        const dice = this.game.move(player, bailChoice);
         await this.diceView.animateRoll(dice || 1, () => this.screen.render());
         if (dice > 0) {
             await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
             await this.animateMovement(player, fromPos, dice);
         }
+        this.game.land();
+        await this.waitForPopups();
         this.render();
         await this.autoSave();
 
@@ -299,12 +313,14 @@ export class App {
             const aiPlayer = currentAi.player;
             const aiFromPos = aiPlayer.position;
 
-            const aiDice = currentAi.takeTurn(this.game);
+            const aiDice = currentAi.move(this.game);
 
-            if (typeof aiDice === "number" && aiDice > 0) {
+            if (aiDice > 0) {
                 await this.diceView.animateRoll(aiDice, () => this.screen.render());
                 await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
                 await this.animateMovement(aiPlayer, aiFromPos, aiDice);
+                currentAi.resolve(this.game);
+                await this.waitForPopups();
             }
             this.render();
             await this.autoSave();
@@ -329,19 +345,7 @@ export class App {
     }
 
     private createPopup(options: PopupOptions): blessed.Widgets.BoxElement {
-        const box = blessed.box({
-            top: "center",
-            left: "center",
-            width: options.width,
-            height: options.height,
-            border: { type: "line" },
-            label: options.label,
-            tags: true,
-            align: "center" as const,
-            valign: "middle" as const,
-            style: { border: { fg: options.color }, label: { fg: options.color, bold: true } },
-            content: options.content,
-        });
+        const box = blessed.box({ top: "center", left: "center", width: options.width, height: options.height, border: { type: "line" }, label: options.label, tags: true, align: "center" as const, valign: "middle" as const, style: { border: { fg: options.color }, label: { fg: options.color, bold: true } }, content: options.content });
         this.screen.append(box);
         this.screen.render();
         return box;
@@ -354,23 +358,7 @@ export class App {
 
     private showDebtPrompt(): Promise<void> {
         return new Promise(resolve => {
-            const debtList = blessed.list({
-                top: "center",
-                left: "center",
-                width: "50%",
-                height: "50%",
-                border: { type: "line" },
-                label: " Not Enough Cash ",
-                tags: true,
-                keys: true,
-                mouse: true,
-                style: {
-                    border: { fg: "red" },
-                    label: { fg: "red", bold: true },
-                    selected: { bg: "red", fg: "white", bold: true },
-                } as any,
-            });
-
+            const debtList = blessed.list({ top: "center", left: "center", width: "50%", height: "50%", border: { type: "line" }, label: " Not Enough Cash ", tags: true, keys: true, mouse: true, style: {border: { fg: "red" },label: { fg: "red", bold: true },selected: { bg: "red", fg: "white", bold: true }, } as any,});
             const refresh = () => {
                 const player = this.game.currentPlayer;
                 const owed = Math.max(0, -player.money);
@@ -410,19 +398,7 @@ export class App {
 
     private showPurchasePrompt(property: Property): Promise<void> {
         return new Promise(resolve => {
-            const box = this.createPopup({
-                width: "40%",
-                height: "30%",
-                label: " Buy Property? ",
-                color: "yellow",
-                content: [
-                    `{bold}Property: ${property.name}{/bold}`,
-                    `Price: $${property.price}`,
-                    `Rent: $${property.rent}`,
-                    "",
-                    "{green-fg}{bold}[B]{/bold}{/green-fg} Buy    {red-fg}{bold}[N]{/bold}{/red-fg} Skip",
-                ].join("\n"),
-            });
+            const box = this.createPopup({ width: "40%", height: "30%", label: " Buy Property? ", color: "yellow", content: [ `{bold}Property: ${property.name}{/bold}`, `Price: $${property.price}`, `Rent: $${property.rent}`, "", "{green-fg}{bold}[B]{/bold}{/green-fg} Buy    {red-fg}{bold}[N]{/bold}{/red-fg} Skip",].join("\n")});
 
             const finish = (buy: boolean) => {
                 this.game.decidePurchase(buy);
@@ -439,23 +415,8 @@ export class App {
         return new Promise(resolve => {
             const offer = Math.ceil(property.price * TAKEOVER_MULTIPLIER);
             const offerPercent = Math.round(TAKEOVER_MULTIPLIER * 100);
-            const box = this.createPopup({
-                width: "44%",
-                height: "32%",
-                label: " Take Over? ",
-                color: "magenta",
-                content: [
-                    `{bold}Property : ${property.name}{/bold}`,
-                    `Current owner : ${property.owner!.name}`,
-                    `Original price : $${property.price}`,
-                    `Rent : $${property.rent}`,
-                    "",
-                    `{magenta-fg}{bold}Offer : $${offer} (${offerPercent}%){/bold}{/magenta-fg}`,
-                    "",
-                    "{green-fg}{bold}[T]{/bold}{/green-fg} Confirm    {red-fg}{bold}[N]{/bold}{/red-fg} Cancel",
-                ].join("\n"),
-            });
-
+            const box = this.createPopup({ width: "44%", height: "32%", label: " Take Over? ", color: "magenta", content: [ `{bold}Property : ${property.name}{/bold}`, `Current owner : ${property.owner!.name}`, `Original price : $${property.price}`, `Rent : $${property.rent}`, "", `{magenta-fg}{bold}Offer : $${offer} (${offerPercent}%){/bold}{/magenta-fg}`, "", "{green-fg}{bold}[T]{/bold}{/green-fg} Confirm    {red-fg}{bold}[N]{/bold}{/red-fg} Cancel"].join("\n")});
+            
             const finish = (confirm: boolean) => {
                 this.game.decideTakeover(confirm);
                 this.closePopup(box);
@@ -470,75 +431,41 @@ export class App {
     private showJailPrompt(player: Player): Promise<boolean> {
         return new Promise(resolve => {
             const canAffordBail = player.money >= JAIL_BAIL_AMOUNT;
-            const box = this.createPopup({
-                width: "42%",
-                height: "30%",
-                label: " In Jail ",
-                color: "magenta",
-                content: [
-                    `{bold}{magenta-fg}You are in Jail!{/magenta-fg}{/bold}`,
-                    "",
-                    `Bail: {yellow-fg}{bold}$${JAIL_BAIL_AMOUNT}{/bold}{/yellow-fg}`,
-                    canAffordBail ? "" : "{red-fg}Not enough cash to pay bail{/red-fg}",
-                    "",
-                    canAffordBail
-                        ? "{green-fg}{bold}[B]{/bold}{/green-fg} Pay Bail    {red-fg}{bold}[N]{/bold}{/red-fg} Skip Turn"
-                        : "{red-fg}{bold}[N]{/bold}{/red-fg} Skip Turn",
-                ].join("\n"),
-            });
+            const box = this.createPopup({ width: "42%", height: "30%", label: " In Jail ", color: "magenta", content: [ `{bold}{magenta-fg}You are in Jail!{/magenta-fg}{/bold}`, "", `Bail: {yellow-fg}{bold}$${JAIL_BAIL_AMOUNT}{/bold}{/yellow-fg}`, canAffordBail ? "" : "{red-fg}Not enough cash to pay bail{/red-fg}", "", canAffordBail ? "{green-fg}{bold}[B]{/bold}{/green-fg} Pay Bail    {red-fg}{bold}[N]{/bold}{/red-fg} Skip Turn" : "{red-fg}{bold}[N]{/bold}{/red-fg} Skip Turn"].join("\n")});
 
             const finish = (pay: boolean) => {
                 this.closePopup(box);
                 resolve(pay);
             };
-            if (canAffordBail) this.screen.onceKey("b", () => finish(true));
+            if (canAffordBail) 
+                this.screen.onceKey("b", () => finish(true));
             this.screen.onceKey("n", () => finish(false));
         });
     }
 
-    private showChancePopup(playerName: string, card: ChanceCard): void {
-        const box = this.createPopup({
-            width: "38%",
-            height: "28%",
-            label: " Chance ",
-            color: "blue",
-            content: [
-                `{bold}{blue-fg}${playerName}{/blue-fg}{/bold}`,
-                "",
-                `{bold}{yellow-fg}${card.title}{/yellow-fg}{/bold}`,
-                `${card.description}`,
-            ].join("\n"),
-        });
+    private async waitForPopups(): Promise<void> {
+        const waits = this.popupWaits;
+        this.popupWaits = [];
+        await Promise.all(waits);
+    }
 
+    private showChancePopup(playerName: string, card: ChanceCard): void {
+        const box = this.createPopup({width: "38%",height: "28%",label: " Chance ",color: "blue",content: [`{bold}{blue-fg}${playerName}{/blue-fg}{/bold}`,"",`{bold}{yellow-fg}${card.title}{/yellow-fg}{/bold}`,`${card.description}`].join("\n"),});
         const popupDurationMs = 1500 + Math.random() * 1500;
-        setTimeout(() => this.closePopup(box), popupDurationMs);
+        this.popupWaits.push(new Promise(resolve => setTimeout(() => {
+            this.closePopup(box);
+            resolve();
+        }, popupDurationMs)));
     }
 
     private showSellPrompt(): Promise<void> {
         return new Promise(resolve => {
             this.busy = true;
-
             const player = this.game.currentPlayer;
             const items = player.properties.map(property => `{green-fg}${property.name}  —  sell for $${Math.floor(property.price * SELL_RATE)}{/green-fg}`);
             items.push("{red-fg}{bold}[ Cancel ]{/bold}{/red-fg}");
 
-            const sellList = blessed.list({
-                top: "center",
-                left: "center",
-                width: "50%",
-                height: "50%",
-                border: { type: "line" },
-                label: " Sell Property ",
-                tags: true,
-                keys: true,
-                mouse: true,
-                style: {
-                    border: { fg: "green" },
-                    label: { fg: "green", bold: true },
-                    selected: { bg: "cyan", fg: "white" },
-                } as any,
-                items: items as any,
-            });
+            const sellList = blessed.list({ top: "center", left: "center", width: "50%", height: "50%", border: { type: "line" }, label: " Sell Property ", tags: true, keys: true, mouse: true, style: { border: { fg: "green" }, label: { fg: "green", bold: true }, selected: { bg: "cyan", fg: "white" } } as any, items: items as any,});
 
             const finish = () => {
                 this.screen.remove(sellList);
@@ -589,4 +516,5 @@ export class App {
         };
     }
 }
+
 

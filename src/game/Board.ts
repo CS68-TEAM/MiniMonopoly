@@ -10,7 +10,11 @@ export class Board {
         for (const def of BOARD_32) {
             let tile: Tile;
             if (def.type === "property") {
-                tile = { index: def.index, name: def.name, type: "property", property: new Property(def.index, def.name, def.price, def.rent) };
+                tile = {
+                    index: def.index, name: def.name, type: "property",
+                    property: new Property(def.index, def.name, def.price, def.rent),
+                    ...(def.color ? { color: def.color } : {}),
+                };
             } else if (def.type === "tax") {
                 tile = { index: def.index, name: def.name, type: "tax", amount: def.rent };
             } else {
@@ -32,3 +36,4 @@ export class Board {
         return undefined;
     }
 }
+

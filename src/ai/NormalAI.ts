@@ -11,12 +11,15 @@ export class NormalAI {
         player.decideJail = (_game, p) => p.money - JAIL_BAIL_AMOUNT >= MIN_CASH_BUFFER_AFTER_BAIL;
     }
 
-    public takeTurn(game: Game): number {
-        const dice = game.roll(this.player);
-        if (dice === 0) return dice;
+    public move(game: Game): number {
+        return game.move(this.player);
+    }
+
+    public resolve(game: Game): void {
+        game.land();
         const tile = game.board.getTile(this.player.position);
-        if (tile.type !== "property" || !tile.property) return dice;
-        if (tile.property.owner?.id === this.player.id) return dice;
+        if (tile.type !== "property" || !tile.property) return;
+        if (tile.property.owner?.id === this.player.id) return;
 
         const p = tile.property;
         const goodRent = p.rent >= GOOD_RENT_THRESHOLD;
@@ -32,6 +35,12 @@ export class NormalAI {
                 game.takeOver(this.player, p.id, offer);
             }
         }
+    }
+
+    public takeTurn(game: Game): number {
+        const dice = this.move(game);
+        if (dice > 0) this.resolve(game);
         return dice;
     }
 }
+

@@ -14,6 +14,11 @@ export function movePosition(position: number, steps: number, boardSize: number)
     return (raw + boardSize) % boardSize;
 }
 
+export function getTakeOverPrice(property: Property): number {
+    return Math.ceil(property.price * TAKEOVER_MULTIPLIER);
+}
+
+export const START_BONUS = 200;
 export const JAIL_BAIL_AMOUNT = 250;
 export const TAKEOVER_MULTIPLIER = 1.5;
 export const MAX_PROPERTIES = 5;
@@ -21,6 +26,18 @@ export const MAX_DIRECT_PURCHASES = 7;
 export const TAKEOVER_LIMIT = 1;
 export const SELL_RATE = 0.3;
 export const TAX_RATE = 0.15;
+
+export function getBuyBlocker(player: Player, property: Property): string | null {
+    if (property.owner)
+        return "already owned";
+    if (player.money < property.price)
+        return "not enough money";
+    if (player.properties.length >= MAX_PROPERTIES)
+        return `max ${MAX_PROPERTIES} properties`;
+    if (player.purchaseCount >= MAX_DIRECT_PURCHASES)
+        return `max ${MAX_DIRECT_PURCHASES} purchases`;
+    return null;
+}
 
 export class Game {
     public readonly board = new Board();
@@ -33,6 +50,7 @@ export class Game {
     public pendingProperty: Property | null = null;
     public pendingTakeover: Property | null = null;
     public pendingDebt = false;
+    private landing: { player: Player; from: number; to: number; dice: number } | null = null;
     public onChance: OnChanceFn | null = null;
     private readonly log: EventLog;
 
@@ -45,7 +63,8 @@ export class Game {
     public get currentPlayer(): Player { return this.players[this.currentPlayerIndex]!; }
     public get activePlayers(): Player[] { return this.players.filter(p => p.status !== "bankrupt"); }
 
-    public roll(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+    public move(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+        this.landing = null;
         if (this.status === "finished") return 0;
         if (player.status === "bankrupt") return 0;
 
@@ -54,7 +73,7 @@ export class Game {
             if (wantsBail && player.money >= JAIL_BAIL_AMOUNT) {
                 player.removeMoney(JAIL_BAIL_AMOUNT);
                 player.status = "active";
-                this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail immediately.`);
+                this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail`);
             } else {
                 player.status = "active";
                 this.log(`${player.name} leaves Jail.`);
@@ -65,55 +84,71 @@ export class Game {
 
         const dice = rollDice();
         this.lastDice = dice;
-        const old = player.position;
-        const next = movePosition(old, dice, this.board.tiles.length);
-        if (next < old && next !== 0) {
+        const from = player.position;
+        const to = movePosition(from, dice, this.board.tiles.length);
+        player.position = to;
+        this.landing = { player, from, to, dice };
+        return dice;
+    }
+
+    public land(): void {
+        const landing = this.landing;
+        if (!landing) return;
+        this.landing = null;
+        const { player, from, to, dice } = landing;
+
+        if (to < from && to !== 0) {
             player.addMoney(200);
-            this.log(`${player.name} passed START and collected $200.`);
+            this.log(`${player.name} collected $${START_BONUS} from start.`);
         }
-        player.position = next;
-        this.log(`${player.name} rolled ${dice} and moved to ${this.board.getTile(next).name}.`);
-        const tile = this.board.getTile(next);
+        const tile = this.board.getTile(to);
+        this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
         this.landOnTile(player, tile);
 
-        if (this.pendingDebt) {
-            return dice;
-        }
+        if (this.pendingDebt)
+            return;
 
         this.checkBankruptcy(player);
         this.checkWinner();
 
-        const awaitingHumanDecision = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && !tile.property.owner;
-        if (awaitingHumanDecision) {
+        const landedOnFreeProperty = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && !tile.property.owner;
+        const blocker = landedOnFreeProperty ? this.buyBlocker(player, tile.property!) : null;
+        if (landedOnFreeProperty && blocker) {
+            this.log(`${player.name} can't buy ${tile.property!.name}: ${blocker}.`);
+        }
+        if (landedOnFreeProperty && !blocker) {
             this.pendingProperty = tile.property!;
         } else {
             this.pendingProperty = null;
             if (this.status === "playing") this.nextTurn();
         }
+    }
+
+    public roll(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+        const dice = this.move(player, humanBailChoice);
+        this.land();
         return dice;
     }
 
     public decidePurchase(buy: boolean): void {
-        if (!this.pendingProperty)
-            return;
-        if (buy)
-            this.buy(this.currentPlayer);
+        if (!this.pendingProperty) return;
+        if (buy) this.buy(this.currentPlayer);
         this.pendingProperty = null;
-        if (this.status === "playing")
-            this.nextTurn();
+        if (this.status === "playing")  this.nextTurn();
     }
 
     public landOnTile(player: Player, tile: Tile): void {
         switch (tile.type) {
             case "start":
-                player.addMoney(200);
-                this.log(`${player.name} landed on START and received $200.`);
+                player.addMoney(START_BONUS);
+                this.log(`${player.name} landed on START and received $${START_BONUS}.`);
                 break;
             case "tax":
                 this.pay(player, Math.ceil(player.money * TAX_RATE), "tax");
                 break;
             case "jail":
             case "goToJail":
+                player.position = 8;
                 player.status = "jailed";
                 this.log(`${player.name} is sent to Jail.`);
                 break;
@@ -129,16 +164,21 @@ export class Game {
         }
     }
 
+    public buyBlocker(player: Player, property: Property): string | null {
+        return getBuyBlocker(player, property);
+    }
+
+    public canBuy(player: Player, property: Property): boolean {
+        return this.buyBlocker(player, property) === null;
+    }
+
     public buy(player: Player): boolean {
         const tile = this.board.getTile(player.position);
-        if (tile.type !== "property" || !tile.property || tile.property.owner)
+        if (tile.type !== "property" || !tile.property)
             return false;
+
         const property = tile.property;
-        if (player.money < property.price)
-            return false;
-        if (player.properties.length >= MAX_PROPERTIES)
-            return false;
-        if (player.purchaseCount >= MAX_DIRECT_PURCHASES)
+        if (!this.canBuy(player, property))
             return false;
  
         player.removeMoney(property.price);
@@ -151,8 +191,7 @@ export class Game {
 
     public sellProperty(player: Player, propertyId: number): boolean {
         const property = player.properties.find(p => p.id === propertyId);
-        if (!property) 
-            return false;
+        if (!property) return false;
 
         player.removeProperty(property);
         property.owner = null;
@@ -162,22 +201,23 @@ export class Game {
         return true;
     }
 
+    //เเก้ logic ให้สามารถ check takeovercount ได้ด้วย
     public takeOver(buyer: Player, propertyId: number, offer: number): boolean {
         const property = this.board.findPropertyById(propertyId);
-        if (!property || !property.owner)
-            return false;
-        if (property.owner.id === buyer.id)
-            return false;
-        if (offer < property.price * TAKEOVER_MULTIPLIER)
-            return false;
-        if (buyer.money < offer) 
-            return false;
-        if (buyer.takeoverCount >= TAKEOVER_LIMIT)
-            return false;
+        if (buyer.properties.length >= MAX_PROPERTIES) return false;
+       
+        if (!property || !property.owner) return false;
+        
+        if (property.owner.id === buyer.id) return false;
+       
+        if (offer < getTakeOverPrice(property)) return false;
+        
+        if (buyer.money < offer)  return false;
+       
+        if (buyer.takeoverCount >= TAKEOVER_LIMIT) return false;
 
         const seller = this.players.find(p => p.id === property.owner!.id);
-        if (!seller)
-            return false;
+        if (!seller) return false;
 
         buyer.removeMoney(offer);
         seller.addMoney(offer);
@@ -188,19 +228,20 @@ export class Game {
         this.log(`? ${buyer.name} took over ${property.name} from ${seller.name} for $${offer}!`);
         return true;
     }
-
+    
+    //เเก้ทำให้ check properties ถ้ามากว่า max_property return false;
     public startTakeover(propertyId: number): boolean {
         const property = this.board.findPropertyById(propertyId);
-        if (!property || !property.owner || property.owner.id === "human")
-            return false;
+        if (!property || !property.owner || property.owner.id === "human") return false;
+       
         const human = this.players.find(p => p.id === "human");
-        if (!human)
-            return false;
-        if (human.takeoverCount >= TAKEOVER_LIMIT)
-            return false;
-        const minOffer = Math.ceil(property.price * TAKEOVER_MULTIPLIER);
-        if (human.money < minOffer)
-            return false;
+        if (!human) return false;
+       
+        if (human.properties.length >= MAX_PROPERTIES) return false;
+        
+        if (human.takeoverCount >= TAKEOVER_LIMIT) return false;
+       
+        if (human.money < getTakeOverPrice(property)) return false;
         this.pendingTakeover = property;
         return true;
     }
@@ -209,8 +250,7 @@ export class Game {
         if (!this.pendingTakeover) return;
         if (confirm) {
             const human = this.players.find(p => p.id === "human")!;
-            const offer = Math.ceil(this.pendingTakeover.price * TAKEOVER_MULTIPLIER);
-            this.takeOver(human, this.pendingTakeover.id, offer);
+            this.takeOver(human, this.pendingTakeover.id, getTakeOverPrice(this.pendingTakeover));
         }
         this.pendingTakeover = null;
     }
@@ -224,13 +264,14 @@ export class Game {
         this.currentPlayerIndex = next;
     }
 
-    public checkWinner(): Player | null {
+    public checkWinner(): Player | null { 
+        if (this.status === "finished") return this.winner;
         const active = this.activePlayers;
-        if (active.length === 1) {
+         if (active.length === 1) {
             this.status = "finished";
             this.winner = active[0]!;
             this.log(`+ ${this.winner.name} wins the game!`);
-        }
+        }   
         return this.winner;
     }
 
@@ -262,15 +303,31 @@ export class Game {
         if (player.money < 0) this.coverDebt(player);
     }
 
-    private drawChance(player: Player): void {
-        const card = pickChanceEvent();
-        this.log(`- Chance: ${card.description}`);
-        this.onChance?.(player, card);
-        card.apply(player, {
-            move: (p, steps) => { p.position = movePosition(p.position, steps, this.board.tiles.length); },
-            payTax: (p, amount) => this.pay(p, amount, "tax"),
-        });
-    }
+private drawChance(player: Player): void {
+    const card = pickChanceEvent();
+
+    this.onChance?.(player, card);
+
+    const message = card.apply(player, {
+        move: (p, steps) => {
+            p.position = movePosition(
+                p.position,
+                steps,
+                this.board.tiles.length
+            );
+        },
+
+        payTax: (p, amount) => {
+            this.pay(p, amount, "tax");
+        },
+    });
+
+    this.log(`- Chance: ${message}`);
+
+    const tile = this.board.tiles[player.position];
+
+    this.landOnTile(player, tile);
+}
 
     private coverDebt(player: Player): void {
         if (player.id === "human" && player.properties.length > 0) {
@@ -279,7 +336,7 @@ export class Game {
         }
         while (player.money < 0 && player.properties.length > 0) {
             const sellOrder = player.sellPriority?.(player) ?? [...player.properties].sort((a, b) => a.price - b.price);
-            const toSell = sellOrder[0] ?? player.properties[0]!;
+            const toSell = sellOrder.find(p => player.properties.includes(p)) ?? player.properties[0]!;
             this.sellProperty(player, toSell.id);
         }
         this.checkBankruptcy(player);
