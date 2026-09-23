@@ -60,13 +60,13 @@ export class PlayerView {
 
             let statusBadge: string;
             if (player.status === "bankrupt") {
-                statusBadge = "{red-fg}{bold}[BANKRUPT]{/bold}{/red-fg}";
+                statusBadge = "{red-fg}{bold}BANKRUPT{/bold}{/red-fg}";
             } else if (player.status === "jailed") {
-                statusBadge = "{magenta-fg}{bold}[JAIL]{/bold}{/magenta-fg}";
+                statusBadge = "{magenta-fg}{bold}JAIL{/bold}{/magenta-fg}";
             } else if (isCurrentPlayer) {
-                statusBadge = `${colorOpen}{bold}[ACTIVE]{/bold}${colorClose}`;
+                statusBadge = `${colorOpen}{bold}ACTIVE{/bold}${colorClose}`;
             } else {
-                statusBadge = "{white-fg}[WAITING]{/white-fg}";
+                statusBadge = "{white-fg}WAITING{/white-fg}";
             }
 
             const displayName = player.name.padEnd(Name_Width);
