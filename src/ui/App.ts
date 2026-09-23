@@ -167,9 +167,13 @@ export class App {
     private startGame(): void {
         const players = [
             new Player("human", "Player", "Human"),
-            new Player("easy", "Bot ( Easy )", "AI Easy"),
-            new Player("normal", "Bot ( Normal )", "AI Normal"),
-            new Player("hard", "Bot ( Hard )", "AI Hard"),
+            new Player("easy", "Ethan", "AI Easy"),
+            new Player("normal", "Norman", "AI Normal"),
+            new Player("hard", "Henry", "AI Hard"),
+
+            // new Player("easy", "Bot ( Easy )", "AI Easy"),
+            // new Player("normal", "Bot ( Normal )", "AI Normal"),
+            // new Player("hard", "Bot ( Hard )", "AI Hard"),
         ];
 
         this.game = new Game(players, message => this.gameLog.add(message));
