@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, afterAll } from "bun:test";
+import { describe, expect, test, beforeEach, } from "bun:test";
 import { movePosition, rollDice, Game, JAIL_BAIL_AMOUNT, SELL_RATE, TAX_RATE } from "../src/game/Game";
 import { Board } from "../src/game/Board";
 import { Player } from "../src/game/Player";
@@ -590,86 +590,4 @@ test("all games terminate without infinite loops", () => {
   }
 });
 
-});
-
-afterAll(() => {
-  const RESET = "\x1b[0m";
-  const BOLD = "\x1b[1m";
-
-  const CYAN = "\x1b[36m";
-  const BLUE = "\x1b[34m";
-  const GREEN = "\x1b[32m";
-  const YELLOW = "\x1b[33m";
-  const RED = "\x1b[31m";
-  const WHITE = "\x1b[37m";
-  const GRAY = "\x1b[90m";
-
-  const money = (value: number) =>
-    value.toLocaleString("en-US").padStart(5, " ");
-
-  const section = (title: string) => {
-    console.log(`\n${BOLD}${CYAN}${title}${RESET}`);
-  };
-
-  const line = (label: string, value: string, color = WHITE) => {
-    console.log(`    ${label.padEnd(22, " ")} : ${color}${value}${RESET}`);
-  };
-
-  const passed = () => {
-    line("STATUS", "PASSED", GREEN);
-  };
-
-  console.clear();
-
-  console.log(`${BOLD}${BLUE}GAME FLOW TEST${RESET}`);
-  console.log(`${GRAY}    Mini Monopoly - v1.0${RESET}`);
-
-  section("SYSTEM STATUS");
-  line("ENGINE", "ONLINE", GREEN);
-  line("GAME CORE", "READY", GREEN);
-  line("TEST SUITE", "RUNNING", YELLOW);
-
-  section("[01] BUY PROPERTY");
-  line("เงินก่อนซื้อ", money(1000), YELLOW);
-  line("ราคาทรัพย์สิน", money(200), YELLOW);
-  line("เงินคงเหลือ", money(800), YELLOW);
-  line("ซื้อ Property", "สำเร็จ", GREEN);
-  passed();
-
-  section("[02] SELL PROPERTY");
-  line("ราคาซื้อ", money(200), YELLOW);
-  line("ราคาขายคืน", money(40), YELLOW);
-  line("Property ถูกนำออก", "สำเร็จ", GREEN);
-  passed();
-
-  section("[03] RENT");
-  line("ผู้เช่าจ่าย", money(100), YELLOW);
-  line("เจ้าของได้รับ", money(100), YELLOW);
-  line("จ่ายค่าเช่า", "สำเร็จ", GREEN);
-  passed();
-
-  section("[04] TAX");
-  line("เงินก่อนจ่ายภาษี", money(1000), YELLOW);
-  line("เงินหลังจ่ายภาษี", money(900), YELLOW);
-  line("ภาษีที่หัก", money(100), YELLOW);
-  passed();
-
-  section("[05] JAIL");
-  line("สถานะก่อน", "ปกติ", WHITE);
-  line("สถานะหลัง", "ติดคุก", RED);
-  passed();
-
-  section("[06] BANKRUPTCY");
-  line("เงินคงเหลือ", money(0), YELLOW);
-  line("สถานะ", "bankrupt", RED);
-  passed();
-
-  section("TEST EXECUTION SUMMARY");
-  line("TOTAL", "6", WHITE);
-  line("PASSED", "6", GREEN);
-  line("FAILED", "0", RED);
-  line("SUCCESS", "100%", GREEN);
-
-  console.log(`\n    ${BOLD}${GREEN}ALL TESTS PASSED${RESET}`);
-  console.log(`    ${CYAN}BUILD STATUS : STABLE${RESET}\\n`);
 });
