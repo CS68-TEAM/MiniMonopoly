@@ -2,7 +2,7 @@ import blessed from "blessed";
 import type { Board } from "../game/Board";
 import type { Player } from "../game/Player";
 import { PLAYER_COLORS } from "./PlayerView";
-import { MAX_PROPERTIES, MAX_DIRECT_PURCHASES, TAKEOVER_LIMIT, SELL_RATE, TAX_RATE } from "../game/Game";
+import { MAX_PROPERTIES, MAX_DIRECT_PURCHASES, TAKEOVER_LIMIT, SELL_RATE, TAX_RATE, getBuyBlocker } from "../game/Game";
 
 function visibleWidth(taggedText: string): number {
     const plainText = taggedText.replace(/\{[^}]+\}/g, "");
@@ -86,10 +86,11 @@ export class PropertyInfo {
                     }
                 } else {
                     lines.push(` {white-fg}Owner {/white-fg}  {white-fg}none{/white-fg}`);
-                    if (human.money >= property.price) {
+                    const blocker = getBuyBlocker(human, property);
+                    if (!blocker) {
                         lines.push(` {green-fg}[B] to buy{/green-fg}`);
                     } else {
-                        lines.push(` {red-fg}Not enough cash{/red-fg}`);
+                        lines.push(` {red-fg}${blocker.charAt(0).toUpperCase() + blocker.slice(1)}{/red-fg}`);
                     }
                 }
                 break;
@@ -105,8 +106,8 @@ export class PropertyInfo {
                 lines.push(` {white-fg}Draw a random card{/white-fg}`);
                 break;
             case "jail":
-                lines.push(` {white-fg}Just visiting{/white-fg}`);
-                lines.push(` {white-fg}No effect{/white-fg}`);
+                lines.push(` {red-fg}{bold}Go to Jail!{/bold}{/red-fg}`);
+                lines.push(` {white-fg}Skip next turn{/white-fg}`);
                 break;
             case "goToJail":
                 lines.push(` {red-fg}{bold}Go to Jail!{/bold}{/red-fg}`);
