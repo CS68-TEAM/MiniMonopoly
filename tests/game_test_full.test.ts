@@ -1,4 +1,4 @@
-import { describe, expect, test, beforeEach, } from "bun:test";
+import { describe, expect, test, beforeEach } from "bun:test";
 import { movePosition, rollDice, Game, JAIL_BAIL_AMOUNT, SELL_RATE, TAX_RATE } from "../src/game/Game";
 import { Board } from "../src/game/Board";
 import { Player } from "../src/game/Player";
@@ -9,10 +9,10 @@ import { NormalAI } from "../src/ai/NormalAI";
 import { HardAI } from "../src/ai/HardAI";
 
 const makePlayers = (): [Player, Player, Player, Player] => [
-new Player("human", "Player", "Human"),
-new Player("bot1", "Bot 1", "AI Easy"),
-new Player("bot2", "Bot 2", "AI Normal"),
-new Player("bot3", "Bot 3", "AI Hard"),
+  new Player("human", "Player", "Human"),
+  new Player("bot1", "Bot 1", "AI Easy"),
+  new Player("bot2", "Bot 2", "AI Normal"),
+  new Player("bot3", "Bot 3", "AI Hard"),
 ];
 
 const noLog = () => {};
