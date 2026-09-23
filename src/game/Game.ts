@@ -63,66 +63,86 @@ export class Game {
     public get currentPlayer(): Player { return this.players[this.currentPlayerIndex]!; }
     public get activePlayers(): Player[] { return this.players.filter(p => p.status !== "bankrupt"); }
 
-    public move(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
-        this.landing = null;
-        if (this.status === "finished") return 0;
-        if (player.status === "bankrupt") return 0;
+   public move(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
+    this.landing = null;
 
-        if (player.status === "jailed") {
-            const wantsBail = player.id === "human" ? (humanBailChoice ?? false) : (player.decideJail?.(this, player) ?? false);
+    if (this.status === "finished") return 0;
+    if (player.status === "bankrupt") return 0;
+
+    if (player.status === "jailed") {
+        if (player.stayinjailed) {
+            player.status = "active";
+            player.stayinjailed = false;
+            this.log(`\x1b[32m${player.name} Leaves Jail.\x1b[0m`);
+        } else {
+            const wantsBail = player.id === "human"
+                ? (humanBailChoice ?? false)
+                : (player.decideJail?.(this, player) ?? false);
+
             if (wantsBail && player.money >= JAIL_BAIL_AMOUNT) {
                 player.removeMoney(JAIL_BAIL_AMOUNT);
                 player.status = "active";
+                player.stayinjailed = false;
                 this.log(`${player.name} paid $${JAIL_BAIL_AMOUNT} bail and left Jail`);
             } else {
-                player.status = "active";
-                this.log(`${player.name} leaves Jail.`);
+                player.stayinjailed = true;
+                this.log(`\x1b[31m${player.name} Stayed in Jail.\x1b[0m`);
                 this.nextTurn();
                 return 0;
             }
         }
-
-        const dice = rollDice();
-        this.lastDice = dice;
-        const from = player.position;
-        const to = movePosition(from, dice, this.board.tiles.length);
-        player.position = to;
-        this.landing = { player, from, to, dice };
-        return dice;
     }
 
-    public land(): void {
-        const landing = this.landing;
-        if (!landing) return;
-        this.landing = null;
-        const { player, from, to, dice } = landing;
+    const dice = rollDice();
+    this.lastDice = dice;
 
-        if (to < from && to !== 0) {
-            player.addMoney(200);
-            this.log(`${player.name} collected $${START_BONUS} from start.`);
-        }
-        const tile = this.board.getTile(to);
-        this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
-        this.landOnTile(player, tile);
+    const from = player.position;
+    const to = movePosition(from, dice, this.board.tiles.length);
 
-        if (this.pendingDebt)
-            return;
+    player.position = to;
+    this.landing = { player, from, to, dice };
 
-        this.checkBankruptcy(player);
-        this.checkWinner();
+    return dice;
+}
 
-        const landedOnFreeProperty = player.id === "human" && this.status === "playing" && tile.type === "property" && !!tile.property && !tile.property.owner;
-        const blocker = landedOnFreeProperty ? this.buyBlocker(player, tile.property!) : null;
-        if (landedOnFreeProperty && blocker) {
-            this.log(`${player.name} can't buy ${tile.property!.name}: ${blocker}.`);
-        }
-        if (landedOnFreeProperty && !blocker) {
-            this.pendingProperty = tile.property!;
-        } else {
-            this.pendingProperty = null;
-            if (this.status === "playing") this.nextTurn();
-        }
+   public land(): void {
+    const landing = this.landing;
+    if (!landing) return;
+    this.landing = null;
+    const { player, from, to, dice } = landing;
+    if (to < from && to !== 0) {
+        player.addMoney(200);
+        this.log(`${player.name} collected $${START_BONUS} from start.`);
     }
+    const tile = this.board.getTile(to);
+    this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
+    this.landOnTile(player, tile);
+    if (player.status === "jailed") {
+        this.pendingProperty = null;
+        if (this.status === "playing")
+            this.nextTurn();
+        return;
+    }
+
+    if (this.pendingDebt)
+        return;
+    this.checkBankruptcy(player);
+    this.checkWinner();
+    const landedOnFreeProperty = player.id === "human"&&this.status === "playing" &&tile.type === "property"&&!!tile.property&&!tile.property.owner;
+    const blocker = landedOnFreeProperty
+        ? this.buyBlocker(player, tile.property!)
+        : null;
+    if (landedOnFreeProperty && blocker) {
+        this.log(`${player.name} can't buy ${tile.property!.name}: ${blocker}.`);
+    }
+    if (landedOnFreeProperty && !blocker) {
+        this.pendingProperty = tile.property!;
+    } else {
+        this.pendingProperty = null;
+        if (this.status === "playing")
+            this.nextTurn();
+    }
+}
 
     public roll(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
         const dice = this.move(player, humanBailChoice);
@@ -147,8 +167,13 @@ export class Game {
                 this.pay(player, Math.ceil(player.money * TAX_RATE), "tax");
                 break;
             case "jail":
-            case "goToJail":
+                player.status = "jailed";
+                player.stayinjailed = false;
+                this.log(`\x1b[31m${player.name} Got Jail.\x1b[0m`);
+                break;
+                case "goToJail":
                 player.position = 8;
+                player.stayinjailed = false;
                 player.status = "jailed";
                 this.log(`${player.name} is sent to Jail.`);
                 break;
@@ -324,7 +349,11 @@ private drawChance(player: Player): void {
 
     this.log(`- Chance: ${message}`);
 
-    const tile = this.board.tiles[player.position];
+    const tile = this.board.getTile(player.position);
+
+    if (tile.type === "chance") {
+        return;
+    }
 
     this.landOnTile(player, tile);
 }
