@@ -2,6 +2,7 @@ import type { Property } from "./Property";
 import type { PlayerStatus, PlayerKind, SellPriorityFn, JailDecisionFn } from "./Types";
 
 export class Player {
+    public stayinjailed = false;
     public position = 0;
     public money: number;
     public status: PlayerStatus = "active";
