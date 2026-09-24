@@ -1,20 +1,23 @@
 import blessed from "blessed";
 import { execSync } from "child_process";
-import { Game, movePosition, TAKEOVER_MULTIPLIER, SELL_RATE, JAIL_BAIL_AMOUNT } from "../game/Game";
 import { Player } from "../game/Player";
-import { ChanceCard, SaveData, SavedPlayerData } from "../game/Types";
+
 import { EasyAI } from "../ai/EasyAI";
 import { NormalAI } from "../ai/NormalAI";
 import { HardAI } from "../ai/HardAI";
+
 import { BoardView } from "./BoardView";
 import { PlayerView } from "./PlayerView";
 import { GameLog } from "./GameLog";
 import { ActionMenu } from "./ActionMenu";
 import { DiceView } from "./DiceView";
-import { PropertyInfo } from "./PropertyInfo";
 import { Property } from "../game/Property";
+import { PropertyInfo } from "./PropertyInfo";
 import { writeSave, readSave } from "../save";
+import { ChanceCard, SaveData, SavedPlayerData } from "../game/Types";
 import { playSound, SOUNDS, closeSoundManager } from "../utils/SoundManager";
+import { buildWinnerContentLines, buildWinnerFooterContent } from "./WinnerView";
+import { Game, movePosition, TAKEOVER_MULTIPLIER, SELL_RATE, JAIL_BAIL_AMOUNT } from "../game/Game";
 
 const SAVE_FILE = "save.json";
 const MOVE_STEP_DELAY_MS = 200;
@@ -284,7 +287,7 @@ export class App {
         const fromPos = player.position;
 
         let bailChoice: boolean | undefined;
-        if (player.status === "jailed") {
+        if (player.status === "jailed" && !player.stayinjailed) {
             bailChoice = await this.showJailPrompt(player);
         }
 
@@ -333,6 +336,12 @@ export class App {
             }
             this.render();
             await this.autoSave();
+        }
+
+        if (this.game.winner) {
+            await this.showWinnerScreen(this.game.winner);
+            const save = await readSave(SAVE_FILE).catch(() => null);
+            this.showStartMenu(save);
         }
 
         this.busy = false;
@@ -449,6 +458,42 @@ export class App {
             if (canAffordBail) 
                 this.screen.onceKey("b", () => finish(true));
             this.screen.onceKey("n", () => finish(false));
+        });
+    }
+
+    private hideGameViews(): void {
+        for (const box of [this.boardView.box, this.playerView.box, this.gameLog.box, this.actionMenu.box, this.diceView.box, this.propertyInfo.box]) {
+            this.screen.remove(box);
+        }
+    }
+
+    private showWinnerScreen(winner: Player): Promise<void> {
+        return new Promise(resolve => {
+            this.hideGameViews();
+
+            const main = blessed.box({
+                top: 0, left: 0, width: "100%", height: "100%-3",
+                tags: true, align: "center" as const, valign: "middle" as const,
+                content: buildWinnerContentLines(winner).join("\n"),
+            });
+
+            const footer = blessed.box({
+                bottom: 0, left: 0, width: "100%", height: 3,
+                tags: true, align: "center" as const, valign: "middle" as const,
+                content: buildWinnerFooterContent(),
+            });
+
+            this.screen.append(main);
+            this.screen.append(footer);
+            this.screen.render();
+
+            const finish = () => {
+                this.screen.remove(main);
+                this.screen.remove(footer);
+                this.screen.render();
+                resolve();
+            };
+            this.screen.onceKey("enter", finish);
         });
     }
 
