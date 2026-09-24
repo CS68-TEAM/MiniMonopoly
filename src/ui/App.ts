@@ -346,6 +346,7 @@ export class App {
             this.playerView.render(this.game.players, this.game.currentPlayer.id);
             this.screen.render();
             await new Promise(resolve => setTimeout(resolve, MOVE_STEP_DELAY_MS));
+            playSound(SOUNDS.move)
         }
     }
 

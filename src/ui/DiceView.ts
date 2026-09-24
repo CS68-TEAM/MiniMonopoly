@@ -1,4 +1,5 @@
 import blessed from "blessed";
+import { playSound, SOUNDS } from "../utils/SoundManager";
 
 const FACE_WIDTH = 13;
 const INSET = 2;
@@ -49,6 +50,7 @@ export class DiceView {
             this.render(randomFace, false);
             onFrame?.();
             await new Promise(resolve => setTimeout(resolve, delay));
+            playSound(SOUNDS.diceRoll)
         }
         this.render(finalValue, true);
         onFrame?.();

@@ -1,5 +1,6 @@
 import type { Property } from "./Property";
 import type { PlayerStatus, PlayerKind, SellPriorityFn, JailDecisionFn } from "./Types";
+import { playSound, SOUNDS } from "../utils/SoundManager";
 
 export class Player {
     public stayinjailed = false;
@@ -24,6 +25,7 @@ export class Player {
 
     public addMoney(amount: number): void {
         this.money += amount;
+        playSound(SOUNDS.receivedMoney)
     }
 
     public removeMoney(amount: number): void {

@@ -11,6 +11,13 @@ export const SOUNDS = {
     lost: "./assets/lost.wav",         // ว้า แพ้แล้วววว
     noProperty: "./assets/noprop.wav", // งื้อ อย่าเอาที่ดินชั้นไป
     payMoney: "./assets/money.wav",    // จ่ายมาซะดีๆ
+
+    //Sfx
+    move:"./assets/move.wav",
+    diceRoll:"./assets/diceroll.wav",
+    receivedMoney:"./assets/receivedmoney.wav",
+    bankrupt:"./assets/dead.wav",
+
 } as const;
 
 let soundProcess: ChildProcess | null = null;
