@@ -292,8 +292,8 @@ export class App {
         }
 
         const dice = this.game.move(player, bailChoice);
-        await this.diceView.animateRoll(dice || 1, () => this.screen.render());
         if (dice > 0) {
+            await this.diceView.animateRoll(dice, () => this.screen.render());
             playSound(SOUNDS.dice(dice));
             await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
             await this.animateMovement(player, fromPos, dice);
