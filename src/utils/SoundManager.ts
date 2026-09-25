@@ -3,7 +3,6 @@ import path from "path";
 
 export const SOUNDS = {
     dice: (value: number) => `./assets/${value}.wav`,
-
     yourTurn: "./assets/round.wav",    // ถึงตาคุณแล้ว
     buyProperty: "./assets/buy.wav",   // ซื้อที่ดิน
 
@@ -13,10 +12,10 @@ export const SOUNDS = {
     payMoney: "./assets/money.wav",    // จ่ายมาซะดีๆ
 } as const;
 
-let soundProcess: ChildProcess | null = null;
+let Sound_Process: ChildProcess | null = null;
 
 function startSoundProcess() {
-    if (soundProcess && !soundProcess.killed) {
+    if (Sound_Process && !Sound_Process.killed) {
         return;
     }
 
@@ -53,40 +52,40 @@ try {
 } catch {}
 `;
 
-    soundProcess = spawn("powershell.exe", [ "-NoProfile", "-NoLogo", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script,], {windowsHide: true, stdio: ["pipe", "ignore", "ignore"]});
-    soundProcess.on("exit", () => {
-        soundProcess = null;
+    Sound_Process = spawn("powershell.exe", [ "-NoProfile", "-NoLogo", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script,], {windowsHide: true, stdio: ["pipe", "ignore", "ignore"]});
+    Sound_Process.on("exit", () => {
+        Sound_Process = null;
     });
 
-    soundProcess.on("error", () => {
-        soundProcess = null;
+    Sound_Process.on("error", () => {
+        Sound_Process = null;
     });
 
-    soundProcess.stdin?.setDefaultEncoding("utf8");
+    Sound_Process.stdin?.setDefaultEncoding("utf8");
 }
 
 export function playSound(file: string): void {
     startSoundProcess();
 
     const soundPath = path.resolve(file);
-    if (soundProcess?.stdin?.writable) {
-        soundProcess.stdin.write(`PLAY:${soundPath}\n`);
+    if (Sound_Process?.stdin?.writable) {
+        Sound_Process.stdin.write(`PLAY:${soundPath}\n`);
     }
 }
 
 export function stopSound(): void {
-    if (soundProcess?.stdin?.writable) {
-        soundProcess.stdin.write("STOP\n");
+    if (Sound_Process?.stdin?.writable) {
+        Sound_Process.stdin.write("STOP\n");
     }
 }
 
 export function closeSoundManager(): void {
-    if (soundProcess) {
+    if (Sound_Process) {
         try {
-            soundProcess.stdin?.write("STOP\n");
-            soundProcess.stdin?.end();
+            Sound_Process.stdin?.write("STOP\n");
+            Sound_Process.stdin?.end();
         } catch {}
-        soundProcess = null;
+        Sound_Process = null;
     }
 }
 
