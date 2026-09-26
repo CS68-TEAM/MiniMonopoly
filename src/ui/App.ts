@@ -88,20 +88,7 @@ export class App {
         menuLines.push("");
         menuLines.push("{red-fg}{bold}Q{/bold} Quit{/red-fg}");
 
-        const menuBox = blessed.box({
-            top: "center",
-            left: "center",
-            width: 54,
-            height: 15,
-            border: { type: "line" },
-            label: " Mini Monopoly ",
-            tags: true,
-            align: "left" as const,
-            valign: "middle" as const,
-            padding: { left: 3, right: 2, top: 0, bottom: 0 },
-            style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } },
-            content: menuLines.join("\n"),
-        });
+        const menuBox = blessed.box({ top: "center", left: "center", width: 54, height: 15, border: { type: "line" }, label: " Mini Monopoly ", tags: true, align: "left" as const, valign: "middle" as const, padding: { left: 3, right: 2, top: 0, bottom: 0 }, style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } }, content: menuLines.join("\n") });
         this.screen.append(menuBox);
         this.screen.render();
 
