@@ -25,7 +25,7 @@ export class Player {
 
     public addMoney(amount: number): void {
         this.money += amount;
-        playSound(SOUNDS.receivedMoney)
+        playSound(SOUNDS.GotMoney)
     }
 
     public removeMoney(amount: number): void {

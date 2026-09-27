@@ -44,7 +44,7 @@ export class DiceView {
     }
 
     public async animateRoll(finalValue: number, onFrame?: () => void): Promise<void> {
-        const frameDelaysMs = [80, 90, 110, 140, 170, 210, 260];
+        const frameDelaysMs = [80, 90, 110, 140, 170, 210, 260, 310, 360];
         for (const delay of frameDelaysMs) {
             const randomFace = Math.floor(Math.random() * 6) + 1;
             this.render(randomFace, false);
