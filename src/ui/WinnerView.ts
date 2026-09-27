@@ -1,4 +1,4 @@
-import type { Player } from "../game/Player";
+import { Player } from "../game/Player";
 
 const CONTENT_WIDTH = 96;
 const STAT_BOX_INNER_WIDTH = 32;
