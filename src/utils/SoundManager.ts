@@ -18,7 +18,7 @@ export const SOUNDS = {
     noProperty:  "./assets/noprop.wav",     // งื้อ อย่าเอาที่ดินชั้นไป
 
     PayRent:     "./assets/sadjung.wav",    // ตอน player ตกที่ดินบอท
-    PayRentTwo: "./assets/payrent.wav",     // ตอน player ตกที่ดินบอท
+    PayRentTwo:  "./assets/payrent.wav",    // ตอน player ตกที่ดินบอท
 
     move:        "./assets/move.wav",
     diceRoll:    "./assets/diceroll.wav",
@@ -28,8 +28,8 @@ export const SOUNDS = {
 
 const SOUND_LISTS = {
     turn: [
-        [SOUNDS.yourTurn, 0.85],
-        [SOUNDS.yourTurn2, 0.15],
+        [SOUNDS.yourTurn, 0.82],
+        [SOUNDS.yourTurn2, 0.18],
     ],
     rent: [
         [SOUNDS.PayRent, 0.30],
