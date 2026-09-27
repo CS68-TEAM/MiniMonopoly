@@ -20,8 +20,8 @@ import { buildWinnerContentLines, buildWinnerFooterContent } from "./WinnerView"
 import { Game, movePosition, TAKEOVER_MULTIPLIER, SELL_RATE, JAIL_BAIL_AMOUNT } from "../game/Game";
 
 const SAVE_FILE = "save.json";
-const MOVE_STEP_DELAY_MS = 200;
-const PAUSE_AFTER_DICE_MS = 300;
+const MOVE_STEP_DELAY_MS = 250;
+const PAUSE_AFTER_DICE_MS = 400;
 const AI_TURN_DELAY_MS = 600;
 
 interface PopupOptions {
@@ -341,8 +341,8 @@ export class App {
             this.boardView.render(this.game.board, this.game.players, { [player.id]: intermediatePos });
             this.playerView.render(this.game.players, this.game.currentPlayer.id);
             this.screen.render();
-            await new Promise(resolve => setTimeout(resolve, MOVE_STEP_DELAY_MS));
             playSound(SOUNDS.move)
+            await new Promise(resolve => setTimeout(resolve, MOVE_STEP_DELAY_MS));
         }
     }
 

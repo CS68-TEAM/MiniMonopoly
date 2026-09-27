@@ -2,7 +2,7 @@ import { Board } from "./Board";
 import { pickChanceEvent } from "./Chance";
 import { Player } from "./Player";
 import type { Property } from "./Property";
-import { playSound, SOUNDS } from "../utils/SoundManager";
+import { playSound, SOUNDS, SelectRandom_Sound } from "../utils/SoundManager";
 import type { Tile, EventLog, OnChanceFn, GameStatus, RandomSource } from "./Types";
 
 export function rollDice(random: RandomSource = Math.random): number {
@@ -170,18 +170,27 @@ export class Game {
             case "jail":
                 player.status = "jailed";
                 player.stayinjailed = false;
+                if (player.id === "human") {
+                    playSound(SOUNDS.gotjail);
+                }
                 this.log(`\x1b[31m${player.name} Got Jail.\x1b[0m`);
                 break;
-                case "goToJail":
+            case "goToJail":
                 player.position = 8;
                 player.stayinjailed = false;
                 player.status = "jailed";
+                if (player.id === "human") {
+                    playSound(SOUNDS.gotjail);
+                }
                 this.log(`${player.name} is sent to Jail.`);
                 break;
             case "parking":
                 this.log(`${player.name} is safe at ${tile.name}.`);
                 break;
             case "chance":
+                if (player.id === "human") {
+                    playSound(SOUNDS.Chance);
+                }
                 this.drawChance(player);
                 break;
             case "property":
@@ -228,7 +237,6 @@ export class Game {
         return true;
     }
 
-    //เเก้ logic ให้สามารถ check takeovercount ได้ด้วย
     public takeOver(buyer: Player, propertyId: number, offer: number): boolean {
         const property = this.board.findPropertyById(propertyId);
         if (buyer.properties.length >= MAX_PROPERTIES) return false;
@@ -253,7 +261,9 @@ export class Game {
         buyer.addProperty(property);
         buyer.takeoverCount++;
         this.log(`? ${buyer.name} took over ${property.name} from ${seller.name} for $${offer}!`);
-        playSound(SOUNDS.noProperty);
+        if (seller.id === "human") {
+            playSound(SOUNDS.takeover);
+        }
         return true;
     }
     
@@ -283,7 +293,7 @@ export class Game {
         this.pendingTakeover = null;
     }
 
-    public nextTurn(): void {
+    public async nextTurn(): Promise<void> {
         if (this.status === "finished") return;
         let next = this.currentPlayerIndex;
         do {
@@ -292,17 +302,21 @@ export class Game {
         this.currentPlayerIndex = next;
 
         if (this.status === "playing" && this.players[next]!.id === "human") {
-            playSound(SOUNDS.yourTurn);
+            await playSound(SelectRandom_Sound("turn"));
         }
     }
 
     public checkWinner(): Player | null { 
-        if (this.status === "finished") return this.winner;
+        if (this.status === "finished") 
+            return this.winner;
         const active = this.activePlayers;
          if (active.length === 1) {
             this.status = "finished";
             this.winner = active[0]!;
             this.log(`+ ${this.winner.name} wins the game!`);
+            if (this.winner.id === "human") {
+                playSound(SOUNDS.win);
+            }
         }   
         return this.winner;
     }
@@ -316,8 +330,14 @@ export class Game {
             this.log(`${player.name} landed on their own property.`);
             return;
         }
+
         const owner = this.players.find(p => p.id === property.owner?.id);
-        if (owner) this.payRent(player, owner, property.rent);
+        if (owner) {
+            this.payRent(player, owner, property.rent);
+            if (player.id === "human") {
+                playSound(SelectRandom_Sound("rent"));
+            }
+        }
     }
 
     private payRent(player: Player, owner: Player, amount: number): void {
@@ -343,11 +363,7 @@ private drawChance(player: Player): void {
 
     const message = card.apply(player, {
         move: (p, steps) => {
-            p.position = movePosition(
-                p.position,
-                steps,
-                this.board.tiles.length
-            );
+            p.position = movePosition( p.position, steps, this.board.tiles.length);
         },
 
         payTax: (p, amount) => {
@@ -358,7 +374,6 @@ private drawChance(player: Player): void {
     this.log(`- Chance: ${message}`);
 
     const tile = this.board.getTile(player.position);
-
     if (tile.type === "chance") {
         return;
     }
