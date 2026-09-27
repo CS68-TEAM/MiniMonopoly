@@ -262,7 +262,7 @@ export class Game {
         buyer.takeoverCount++;
         this.log(`? ${buyer.name} took over ${property.name} from ${seller.name} for $${offer}!`);
         if (seller.id === "human") {
-            playSound(SOUNDS.takeover);
+            playSound(SelectRandom_Sound("take"));
         }
         return true;
     }

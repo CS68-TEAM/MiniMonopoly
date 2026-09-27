@@ -27,6 +27,10 @@ export const SOUNDS = {
 } as const;
 
 const SOUND_LISTS = {
+    take: [
+        [SOUNDS.noProperty, 0.50],
+        [SOUNDS.takeover, 0.50],
+    ],
     turn: [
         [SOUNDS.yourTurn, 0.82],
         [SOUNDS.yourTurn2, 0.18],
