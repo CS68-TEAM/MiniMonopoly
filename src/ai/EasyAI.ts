@@ -44,12 +44,6 @@ export class EasyAI {
         }
     }
 
-    public takeTurn(game: Game): number {
-        const dice = this.move(game);
-        if (dice > 0) this.resolve(game);
-        return dice;
-    }
-
     private static isBehindRichestOpponent(game: Game, player: Player): boolean {
         const opponents = game.players.filter(pl => pl.id !== player.id && pl.status !== "bankrupt");
         const richestOpponent = Math.max(0, ...opponents.map(pl => pl.money));
