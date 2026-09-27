@@ -31,11 +31,4 @@ export class HardAI {
         }
     }
  
-    public takeTurn(game: Game): number {
-        const dice = this.move(game);
-        if (dice > 0)
-            this.resolve(game);
-        return dice;
-    }
 }
- 
