@@ -112,7 +112,7 @@ export class Game {
     this.landing = null;
     const { player, from, to, dice } = landing;
     if (to < from && to !== 0) {
-        player.addMoney(200);
+        player.addMoney(START_BONUS);
         this.log(`${player.name} collected $${START_BONUS} from start.`);
     }
     const tile = this.board.getTile(to);
