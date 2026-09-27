@@ -566,14 +566,8 @@ describe("6 · Win Rate", () => {
                 expect(parseFloat(pct)).toBeLessThan(60);
             }
         }
-        const totalHumanWins = allStats.reduce(
-            (sum, s) => sum + s.wins["human"]!,
-            0,
-        );
-        const totalBot3Wins = allStats.reduce(
-            (sum, s) => sum + s.wins["bot3"]!,
-            0,
-        );
+        const totalHumanWins = allStats.reduce((sum, s) => sum + s.wins["human"]!, 0);
+        const totalBot3Wins = allStats.reduce((sum, s) => sum + s.wins["bot3"]!, 0);
         expect(totalHumanWins).toBeGreaterThan(totalBot3Wins);
     });
 
