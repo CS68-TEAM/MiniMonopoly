@@ -116,7 +116,9 @@ export class Game {
         this.log(`${player.name} collected $${START_BONUS} from start.`);
     }
     const tile = this.board.getTile(to);
-    this.log(`${player.name} rolled ${dice} and moved to ${tile.name}.`);
+    this.log(dice > 0
+        ? `${player.name} rolled ${dice} and moved to ${tile.name}.`
+        : `${player.name} teleported to ${tile.name}.`);
     this.landOnTile(player, tile);
     if (player.status === "jailed") {
         this.pendingProperty = null;
@@ -144,6 +146,13 @@ export class Game {
             this.nextTurn();
     }
 }
+
+    // TEST MODE ONLY: วาร์ปผู้เล่นไปช่องที่ต้องการ แล้วให้ land() ทำงานต่อได้ตามปกติ
+    public debugTeleport(player: Player, to: number): void {
+        const target = movePosition(to, 0, this.board.tiles.length);
+        this.landing = { player, from: target, to: target, dice: 0 }; // from === to => ไม่ได้โบนัสผ่าน START
+        player.position = target;
+    }
 
     public roll(player: Player = this.currentPlayer, humanBailChoice?: boolean): number {
         const dice = this.move(player, humanBailChoice);
@@ -436,3 +445,4 @@ private drawChance(player: Player): void {
         if (player.money < 0) this.declareBankrupt(player);
     }
 }
+

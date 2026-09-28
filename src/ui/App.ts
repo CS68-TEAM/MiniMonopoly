@@ -23,6 +23,7 @@ const SAVE_FILE = "save.json";
 const MOVE_STEP_DELAY_MS = 250;
 const PAUSE_AFTER_DICE_MS = 400;
 const AI_TURN_DELAY_MS = 600;
+const TEST_MONEY = 9999;
 
 interface PopupOptions {
     width: string;
@@ -44,6 +45,9 @@ export class App {
     private ais!: (EasyAI | NormalAI | HardAI)[];
     private busy = false;
     private popupWaits: Promise<void>[] = [];
+    private testMode = false;
+    private keysBound = false;
+    private readonly moneyBackup = new Map<string, number>();
 
     constructor() {
         App.resizeConsole(195, 48);
@@ -185,6 +189,9 @@ export class App {
 
     private layout(): void {
         const MENU_HEIGHT = 3;
+        this.testMode = false;
+        this.moneyBackup.clear();
+        this.actionMenu.setTestMode(false);
         
         this.boardView.box.top = 0;
         this.boardView.box.left = 0;
@@ -234,6 +241,12 @@ export class App {
     }
 
     private bindKeys(): void {
+        if (this.keysBound) return;
+        this.keysBound = true;
+
+        this.screen.key(["C-l"], () => this.toggleTestMode());
+        this.screen.key(["C-g"], () => { void this.doTeleport(); });
+
         this.screen.key(["q", "C-c"], () => { closeSoundManager(); process.exit(0); });
         this.screen.key(["enter", "r"], () => { void this.doRoll(); });
 
@@ -285,6 +298,10 @@ export class App {
             await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
             await this.animateMovement(player, fromPos, dice);
         }
+        await this.resolveTurn();
+    }
+
+    private async resolveTurn(): Promise<void> {
         this.game.land();
         await this.waitForPopups();
         this.render();
@@ -334,6 +351,80 @@ export class App {
         this.busy = false;
     }
 
+    private toggleTestMode(): void {
+        if (this.busy || !this.game || this.game.status !== "playing") return;
+        this.testMode = !this.testMode;
+
+        if (this.testMode) {
+            this.moneyBackup.clear();
+            for (const p of this.game.players) {
+                if (p.status === "bankrupt") continue;
+                this.moneyBackup.set(p.id, p.money);
+                p.money = TEST_MONEY;
+            }
+            this.gameLog.add(`[TEST MODE] ON - everyone has $${TEST_MONEY.toLocaleString()} (Ctrl+G = go to tile)`);
+        } else {
+            for (const p of this.game.players) {
+                const prev = this.moneyBackup.get(p.id);
+                if (prev !== undefined && p.status !== "bankrupt") p.money = prev;
+            }
+            this.moneyBackup.clear();
+            this.gameLog.add("[TEST MODE] OFF - money restored");
+        }
+
+        this.actionMenu.setTestMode(this.testMode);
+        this.render();
+    }
+
+    private async doTeleport(): Promise<void> {
+        if (!this.testMode || this.busy || this.game.status !== "playing") return;
+        const player = this.game.currentPlayer;
+        if (player.id !== "human") return;
+        if (player.status === "jailed") {
+            this.gameLog.add("[TEST MODE] Can't teleport while in Jail - roll first.");
+            this.screen.render();
+            return;
+        }
+
+        this.busy = true;
+        const target = await this.showTeleportPrompt(player.position);
+        if (target === null) {
+            this.busy = false;
+            this.render();
+            return;
+        }
+
+        this.game.debugTeleport(player, target);
+        this.render();
+        await this.resolveTurn();
+    }
+
+    private showTeleportPrompt(currentPosition: number): Promise<number | null> {
+        return new Promise(resolve => {
+            const items = this.game.board.tiles.map(tile => {
+                const p = tile.property;
+                const extra = p ? `  $${p.price}${p.owner ? `  (${p.owner.name})` : ""}` : "";
+                return `#${String(tile.index).padStart(2, "0")}  ${tile.name}${extra}`;
+            });
+
+            const list = blessed.list({ top: "center", left: "center", width: "40%", height: "80%", border: { type: "line" }, label: " [TEST] Go to tile  (Enter = go, Esc = cancel) ", tags: false, keys: true, mouse: true, scrollbar: { ch: " " }, style: { border: { fg: "red" }, label: { fg: "red", bold: true }, selected: { bg: "red", fg: "white", bold: true } } as any, items: items as any });
+
+            const finish = (result: number | null) => {
+                this.screen.remove(list);
+                this.screen.render();
+                resolve(result);
+            };
+
+            this.screen.append(list);
+            list.select(currentPosition);
+            list.focus();
+            this.screen.render();
+
+            list.on("select", (_item: unknown, index: number) => finish(index));
+            list.key(["escape"], () => finish(null));
+        });
+    }
+
     private async animateMovement(player: Player, fromPos: number, steps: number): Promise<void> {
         const boardSize = this.game.board.tiles.length;
         for (let step = 1; step <= steps; step++) {
@@ -347,6 +438,7 @@ export class App {
     }
 
     private async autoSave(): Promise<void> {
+        if (this.testMode) return;
         await writeSave(SAVE_FILE, this.buildSaveData()).catch(() => { });
     }
 
@@ -558,3 +650,4 @@ export class App {
         };
     }
 }
+
