@@ -168,6 +168,29 @@ bun run test
 ```
 MiniMonopoly/
 │
+├── assets/
+│   ├── 1.wav
+│   ├── 2.wav
+│   ├── 3.wav
+│   ├── 4.wav
+│   ├── 5.wav
+│   ├── 6.wav
+│   ├── buy.wav
+│   ├── chance.wav
+│   ├── diceroll.wav
+│   ├── jail.wav
+│   ├── lost.wav
+│   ├── move.wav
+│   ├── noprop.wav
+│   ├── payrent.wav
+│   ├── receivedmoney.wav
+│   ├── round.wav
+│   ├── sadjung.wav
+│   ├── start.wav
+│   ├── takeover.wav
+│   ├── win.wav
+│   └── yourturn.wav
+│
 ├── src/
 │   ├── main.ts
 │   ├── save.ts
@@ -186,16 +209,19 @@ MiniMonopoly/
 │   │   ├── Property.ts
 │   │   └── Types.ts
 │   │
-│   └── ui/
-│       ├── ActionMenu.ts
-│       ├── App.ts
-│       ├── Board32.ts
-│       ├── BoardView.ts
-│       ├── DiceView.ts
-│       ├── GameLog.ts
-│       ├── Logo.ts
-│       ├── PlayerView.ts
-│       └── PropertyInfo.ts
+│   ├── ui/
+│   │   ├── ActionMenu.ts
+│   │   ├── App.ts
+│   │   ├── Board32.ts
+│   │   ├── BoardView.ts
+│   │   ├── DiceView.ts
+│   │   ├── GameLog.ts
+│   │   ├── Logo.ts
+│   │   ├── PlayerView.ts
+│   │   └── PropertyInfo.ts
+│   │
+│   └── utils/
+│       └── SoundManager.ts
 │
 ├── tests/
 │   └── game_test_full.test.ts
@@ -203,7 +229,6 @@ MiniMonopoly/
 ├── .gitignore
 ├── package.json
 └── README.md
-
 ```
 ---
 
