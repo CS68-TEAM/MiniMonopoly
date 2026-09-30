@@ -204,7 +204,6 @@ MiniMonopoly/
 │   │   ├── Board.ts
 │   │   ├── Chance.ts
 │   │   ├── Game.ts
-│   │   ├── GameConfig.ts
 │   │   ├── Player.ts
 │   │   ├── Property.ts
 │   │   └── Types.ts
