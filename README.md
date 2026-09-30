@@ -163,6 +163,8 @@ bun run start
 - **ไม่มีบ้าน/โรงแรม** - ถือที่ดินเฉยๆ ค่าเช่าคงที่ตายตัว ไม่มีระบบอัปเกรดที่ดินให้แพงขึ้น
 
 ---
+## Class Diagram
+<img width="8192" height="7372" alt="diagram" src="https://github.com/user-attachments/assets/01d89796-3bf8-49cf-921c-d751e306fce0" />
 
 ## Documentation
  
