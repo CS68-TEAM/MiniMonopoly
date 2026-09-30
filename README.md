@@ -168,13 +168,13 @@ bun run start
  
 | เอกสาร | เนื้อหา |
 |---|---|
-| [requirements.md](docs/requirements.md) | ระบบต้องทำอะไรได้ (FR / NFR) |
-| [spec.md](docs/spec.md) | กติกา ค่าคงที่ บอร์ด คุก หนี้ takeover Chance (แยกไฟล์ตามหัวข้อ) |
-| [ai-actions.md](docs/ai-actions.md) | ตรรกะตัดสินใจของบอทแต่ละระดับ |
-| [architecture.md](docs/architecture.md) | โครงสร้างโมดูล, diagram |
-| [game-design.md](docs/game-design.md) | วิธีการออกแบบเกม |
-| [code-map.md](docs/code-map.md) | อยากแก้อะไรให้ไปไฟล์ไหน |
-| [testing.md](docs/testing.md) | วิธีรันเทส และ Test Mode |
+| [requirements.md](03-Documentation/requirements.md) | ระบบต้องทำอะไรได้ (FR / NFR) |
+| [spec.md](03-Documentation/spec.md) | กติกา ค่าคงที่ บอร์ด คุก หนี้ takeover Chance (แยกไฟล์ตามหัวข้อ) |
+| [ai-actions.md](03-Documentation/ai-actions.md) | ตรรกะตัดสินใจของบอทแต่ละระดับ |
+| [architecture.md](03-Documentation/architecture.md) | โครงสร้างโมดูล, diagram |
+| [game-design.md](03-Documentation/game-design.md) | วิธีการออกแบบเกม |
+| [code-map.md](03-Documentation/code-map.md) | อยากแก้อะไรให้ไปไฟล์ไหน |
+| [testing.md](03-Documentation/testing.md) | วิธีรันเทส และ Test Mode |
 
 ## Author
 | ชื่อ | รหัสนักศึกษา | ชั้นปี | หน้าที่ | 

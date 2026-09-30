@@ -1,18 +1,12 @@
 import { beforeEach, describe, expect, test } from "bun:test";
-import { Game, JAIL_BAIL_AMOUNT, SELL_RATE, TAX_RATE, movePosition, rollDice } from "../src/game/Game";
-import { Board } from "../src/game/Board";
-
-import { Player } from "../src/game/Player";
-
-import { PlayerStatus } from "../src/game/Types";
-
-import { Property } from "../src/game/Property";
-
-import { EasyAI } from "../src/ai/EasyAI";
-
-import { NormalAI } from "../src/ai/NormalAI";
-
-import { HardAI } from "../src/ai/HardAI";
+import { Game, JAIL_BAIL_AMOUNT, SELL_RATE, TAX_RATE, movePosition, rollDice } from "../01-Source-code/game/Game";
+import { Board } from "../01-Source-code/game/Board";
+import { Player } from "../01-Source-code/game/Player";
+import { PlayerStatus } from "../01-Source-code/game/Types";
+import { Property } from "../01-Source-code/game/Property";
+import { EasyAI } from "../01-Source-code/ai/EasyAI";
+import { NormalAI } from "../01-Source-code/ai/NormalAI";
+import { HardAI } from "../01-Source-code/ai/HardAI";
 
 const makePlayers = (): [Player, Player, Player, Player] => [
     new Player("human", "Player", "Human"),
