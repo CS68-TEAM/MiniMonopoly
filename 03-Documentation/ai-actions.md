@@ -1,6 +1,6 @@
 # AI Behavior
 
-บอท 3 ตัวอยู่ใน `src/ai/`
+บอท 3 ตัวอยู่ใน `01-Source-code/ai/`
 
 * `EasyAI.ts`
 * `NormalAI.ts`
@@ -209,8 +209,8 @@ Game ตรวจสอบกฎของเกมอีกครั้งด้
 
 ## ถ้าอยากเพิ่ม AI ระดับใหม่
 
-1. สร้าง `src/ai/XxxAI.ts` ใช้โครงสร้างของ AI ตามอันเดิม
+1. สร้าง `01-Source-code/ai/XxxAI.ts` ใช้โครงสร้างของ AI ตามอันเดิม
 2. กำหนด `sellPriority`, `decideJail`, `move()` และ `resolve()` ให้ตัวใหม่
-3. เพิ่มค่า `PlayerKind` ใน `src/game/Types.ts`
+3. เพิ่มค่า `PlayerKind` ใน `01-Source-code/game/Types.ts`
 4. ไปลงทะเบียน AI ตอนสร้างผู้เล่นใน `main.ts` / `App.ts`
 5. หากจำนวนผู้เล่นเปลี่ยน ต้องตรวจสอบข้อจำกัดจำนวนผู้เล่นของ `Game` ด้วย

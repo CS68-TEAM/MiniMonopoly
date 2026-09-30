@@ -28,7 +28,7 @@ MiniMonopoly/
 │   ├── win.wav
 │   └── yourturn.wav
 │
-├── src/
+├── 01-Source-code/
 │   ├── main.ts
 │   ├── save.ts
 │   │
@@ -70,7 +70,7 @@ MiniMonopoly/
 # แต่ละ layer ทำอะไร
 ---
 
-##  `src/ai` - ai layer
+##  `01-Source-code/ai` - ai layer
 
 | ไฟล์ | ทำอะไร |
 |---|---|
@@ -78,7 +78,7 @@ MiniMonopoly/
 |NormalAI.ts|ซื้อเมื่อค่าเช่าดีพอ มีเงินสำรองเหลือ และยังไม่ถือที่ดินเต็มโควตา|
 |HardAI.ts|ตัดสินใจซื้อโดยดูความคุ้มค่า (ROI) และเช็กว่าตัวเองเงินน้อยกว่าคู่แข่งที่รวยสุดหรือไม่ ถ้าตามหลังจะกล้าเสี่ยงมากขึ้น|
 
-## `src/game` - game layer
+## `01-Source-code/game` - game layer
 
 | ไฟล์ | ทำอะไร |
 |---|---|
@@ -89,7 +89,7 @@ MiniMonopoly/
 |Property.ts|คือที่ดินหนึ่งแปลง เก็บชื่อ ราคา ค่าเช่า และเจ้าของ|
 |Types.ts|รวมชนิดข้อมูลกลางที่ทุกไฟล์ใช้ เช่น Tile, PlayerStatus, ChanceCard, SaveData|
 
-## `src/ui` - UI layer
+## `01-Source-code/ui` - UI layer
 
 | ไฟล์ | ทำอะไร |
 |---|---|
@@ -104,7 +104,7 @@ MiniMonopoly/
 |WinnerView.ts| สร้างหน้าจอประกาศผู้ชนะ มีถ้วยรางวัลและกล่องสถิติ|
 
 
-## `src/utils - SoundManager.ts`
+## `01-Source-code/utils - SoundManager.ts`
 | ไฟล์ | ทำอะไร |
 |---|---|
 |SoundManager.ts| เล่นเสียงประกอบเกม โดยเปิด PowerShell ค้างไว้เป็น process เดียวแล้วส่งคำสั่งเล่นไฟล์เสียงเข้าไปเป็นคิว และมีระบบสุ่มเสียงแบบถ่วงน้ำหนัก |

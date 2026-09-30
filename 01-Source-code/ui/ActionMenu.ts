@@ -16,18 +16,7 @@ const TEST_HINTS = [
 const CONTROL_HINT_SEPARATOR = "   │   ";
 
 export class ActionMenu {
-    public readonly box = blessed.box({
-        label: " Controls ",
-        border: { type: "line" },
-        style: {
-            border: { fg: "white" },
-            label: { fg: "white", bold: true },
-        },
-        tags: true,
-        align: "center" as const,
-        valign: "middle" as const,
-        content: CONTROL_HINTS.join(CONTROL_HINT_SEPARATOR),
-    });
+    public readonly box = blessed.box({ label: " Controls ", border: { type: "line" }, style: { border: { fg: "white" }, label: { fg: "white", bold: true },}, tags: true, align: "center" as const, valign: "middle" as const, content: CONTROL_HINTS.join(CONTROL_HINT_SEPARATOR) });
 
     public setTestMode(on: boolean): void {
         const hints = on ? [...CONTROL_HINTS, ...TEST_HINTS] : CONTROL_HINTS;

@@ -1,6 +1,6 @@
 # 🎲 Mini Monopoly (TUI)
 
-เกม mini Monopoly (เกมส์เศรษฐีฉบับย่อ) เล่นใน terminal มีผู้เล่น `1` คน และบอทที่มีความยากแตกต่างกัน ทุกคนมีเงินเริ่มต้นที่ `$1000` ลูกเต๋ามีเพียง `1` ลูก สามารถซื้อที่ดินได้และยังยึดที่ดินต่อจากผู้เล่นอื่นได้เช่นกัน ใครที่เหลือรอดเป็นคนสุดท้ายไม่ล้มละลายก่อน จะเป็นผู้ชนะ !!!
+เกม mini Monopoly (เกมส์เศรษฐีฉบับย่อ) เล่นใน terminal มีผู้เล่น `1` คน และบอท `3` ตัว มีความยากแตกต่างกัน ทุกคนมีเงินเริ่มต้นที่ `$1000` ลูกเต๋ามี `1` ลูก สามารถซื้อที่ดินได้และยังยึดที่ดินต่อจากผู้เล่นอื่นได้เช่นกัน ใครที่เหลือรอดเป็นคนสุดท้ายไม่ล้มละลายก่อน จะเป็นผู้ชนะ !!!
 
 ---
 ## How to Run
@@ -168,13 +168,13 @@ bun run start
  
 | เอกสาร | เนื้อหา |
 |---|---|
-| [requirements.md](docs/requirements.md) | ระบบต้องทำอะไรได้ (FR / NFR) |
-| [spec.md](docs/spec.md) | กติกา ค่าคงที่ บอร์ด คุก หนี้ takeover Chance (แยกไฟล์ตามหัวข้อ) |
-| [ai-actions.md](docs/ai-actions.md) | ตรรกะตัดสินใจของบอทแต่ละระดับ |
-| [architecture.md](docs/architecture.md) | โครงสร้างโมดูล, diagram |
-| [game-design.md](docs/game-design.md) | วิธีการออกแบบเกม |
-| [code-map.md](docs/code-map.md) | อยากแก้อะไรให้ไปไฟล์ไหน |
-| [testing.md](docs/testing.md) | วิธีรันเทส และ Test Mode |
+| [requirements.md](03-Documentation/requirements.md) | ระบบต้องทำอะไรได้ (FR / NFR) |
+| [spec.md](03-Documentation/spec.md) | กติกา ค่าคงที่ บอร์ด คุก หนี้ takeover Chance (แยกไฟล์ตามหัวข้อ) |
+| [ai-actions.md](03-Documentation/ai-actions.md) | ตรรกะตัดสินใจของบอทแต่ละระดับ |
+| [architecture.md](03-Documentation/architecture.md) | โครงสร้างโมดูล, diagram |
+| [game-design.md](03-Documentation/game-design.md) | วิธีการออกแบบเกม |
+| [code-map.md](03-Documentation/code-map.md) | อยากแก้อะไรให้ไปไฟล์ไหน |
+| [testing.md](03-Documentation/testing.md) | วิธีรันเทส และ Test Mode |
 
 ## Author
 | ชื่อ | รหัสนักศึกษา | ชั้นปี | หน้าที่ | 

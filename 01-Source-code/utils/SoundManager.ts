@@ -2,28 +2,27 @@ import { spawn, type ChildProcess } from "child_process";
 import path from "path";
 
 export const SOUNDS = {
-    dice: (value: number) => `./assets/${value}.wav`,
-    yourTurn:    "./assets/round.wav",      // ถึงตาคุณแล้ว
-    yourTurn2:   "./assets/yourturn.wav",   // ถึงตาคุณแล้ว (ของแถม นานๆได้ยินที)
-    buyProperty: "./assets/buy.wav",        // ซื้อที่ดิน
+    dice: (value: number) => `./01-Source-code/assets/${value}.wav`,
+    yourTurn:    "./01-Source-code/assets/round.wav",      // ถึงตาคุณแล้ว
+    yourTurn2:   "./01-Source-code/assets/yourturn.wav",   // ถึงตาคุณแล้ว (ของแถม นานๆได้ยินที)
+    buyProperty: "./01-Source-code/assets/buy.wav",        // ซื้อที่ดิน
 
-    gameStart:   "./assets/start.wav",      // เริ่มเกม
-    lost:        "./assets/lost.wav",       // ว้า แพ้แล้วววว
-    win:         "./assets/win.wav",        // เยส ชนะแล้ว
-    payMoney:    "./assets/money.wav",      // จ่ายมาซะดีๆ
-    gotjail:     "./assets/jail.wav",       // ติดคุก
-    Chance:      "./assets/chance.wav",     // เสี่ยงดวง
+    gameStart:   "./01-Source-code/assets/start.wav",      // เริ่มเกม
+    lost:        "./01-Source-code/assets/lost.wav",       // ว้า แพ้แล้วววว
+    win:         "./01-Source-code/assets/win.wav",        // เยส ชนะแล้ว
+    payMoney:    "./01-Source-code/assets/money.wav",      // จ่ายมาซะดีๆ
+    gotjail:     "./01-Source-code/assets/jail.wav",       // ติดคุก
+    Chance:      "./01-Source-code/assets/chance.wav",     // เสี่ยงดวง
 
-    takeover:    "./assets/takeover.wav",   // ไม่นะม่าย
-    noProperty:  "./assets/noprop.wav",     // งื้อ อย่าเอาที่ดินชั้นไป
+    takeover:    "./01-Source-code/assets/takeover.wav",   // ไม่นะม่าย
+    noProperty:  "./01-Source-code/assets/noprop.wav",     // งื้อ อย่าเอาที่ดินชั้นไป
 
-    PayRent:     "./assets/sadjung.wav",    // ตอน player ตกที่ดินบอท
-    PayRentTwo:  "./assets/payrent.wav",    // ตอน player ตกที่ดินบอท
+    PayRent:     "./01-Source-code/assets/sadjung.wav",    // ตอน player ตกที่ดินบอท
+    PayRentTwo:  "./01-Source-code/assets/payrent.wav",    // ตอน player ตกที่ดินบอท
 
-    move:        "./assets/move.wav",
-    diceRoll:    "./assets/diceroll.wav",
-    GotMoney:    "./assets/receivedmoney.wav",
-    // bankrupt: "./assets/dead.wav",
+    move:        "./01-Source-code/assets/move.wav",
+    diceRoll:    "./01-Source-code/assets/diceroll.wav",
+    GotMoney:    "./01-Source-code/assets/receivedmoney.wav",
 } as const;
 
 const SOUND_LISTS = {
