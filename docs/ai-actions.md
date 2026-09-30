@@ -1,32 +1,216 @@
 # AI Behavior
 
-บอท 3 ระดับอยู่ใน `src/ai/` (`EasyAI.ts`, `NormalAI.ts`, `HardAI.ts`) โครงสร้างเหมือนกัน:
+บอท 3 ตัวอยู่ใน `src/ai/`
 
-- `constructor(player)` — ผูก `player.sellPriority` (ลำดับขายตอนหนี้ท่วม) และ `player.decideJail` (ตัดสินใจจ่ายประกันตัว)
-- `move(game)` — เรียก `game.move(player)`
-- `resolve(game)` — เรียก `game.land()` แล้วตัดสินใจ `game.buy()` / `game.takeOver()` ถ้าอยู่บนที่ดิน
+* `EasyAI.ts`
+* `NormalAI.ts`
+* `HardAI.ts`
 
-ตัวเลข threshold ประกาศเป็นค่าคงที่บนสุดของแต่ละไฟล์ แก้ที่นั่น
+ทั้ง 3 ตัวใช้โครงสร้างหลักเหมือนกัน และรับผิดชอบ **AI Action** มี การเดิน, ซื้อที่ดิน, Take Over, การตัดสินใจติดสินบน เเละการขายที่ดินของตัวมันเอง
 
-## เปรียบเทียบ
+## เปรียบเทียบ AI Action
 
-| | EasyAI | NormalAI | HardAI |
-|---|---|---|---|
-| ซื้อที่ดินว่าง | ซื้อทันทีถ้ามีเงินพอไม่สนอย่างอื่น | ซื้อถ้าเงินคงเหลือหลังซื้อมากกว่าหรือเท่ากับ 150 | ซื้อถ้าผลตอบแทนเกิน threshold ที่ปรับไว้ว่ากำลังตามหลังคู่แข่งที่รวยสุดหรือไม่ และเงินคงเหลือหลังซื้อน้อยกว่าหรือเท่ากับ 150 |
-| Takeover | ทำทันทีถ้ามีเงินพอ | เงื่อนไขเดียวกับซื้อที่ดินว่าง | ทำเฉพาะตอนตามหลังคู่แข่งรวยสุด และผลตอบแทนผ่าน threshold |
-| จ่ายประกันตัว | ไม่จ่ายเลย - ยอมติดคุกเสมอ | จ่ายถ้าเหลือเงินมากกว่าหรือเท่ากับ 300 หลังจ่าย | จ่ายถ้าเหลือเงินมากกว่าหรือเท่ากับ 100 หลังจ่าย **และ** (ตามหลังคู่แข่งรวยสุด หรือมีที่ดินมากกว่าหรือเท่ากับ 3 แปลง) |
-| ลำดับขายตอนติดหนี้ | ขายราคาถูกสุดก่อน | ขายที่ดินที่ ค่าเช่า ต่ำสุดก่อน | ขายที่ดินที่ผลตอบแทนต่ำสุดก่อน |
+### ซื้อที่ดิน
+-Easy ROI `rent x 4 - price x 0.25` ต้องมากกว่า threshold และเงินหลังซื้อ มากกว่าหรือเท่ากับ 150         
+-Normal	`rent มากกว่าหรือเท่ากับ 30`, เงินหลังซื้อ มากกว่าหรือเท่ากับ 150 และจำนวน Property ยังไม่ถึง `MAX_PROPERTIES`       
+-Hard ซื้อถ้า `money มากกว่าหรือเท่ากับ price`       
+### Take Over
+-Easy ต้องตามหลังคู่แข่งที่รวยที่สุด + ROI มากกว่า threshold + เงินหลัง Take Over มากกว่าหรือเท่ากับ 150 
+-Normal เงินหลัง Take Over มากกว่าหรือเท่ากับ 150 + `rent มากกว่าหรือเท่ากับ 30` + จำนวน Property ยังไม่ถึง `MAX_PROPERTIES` 
+-Hard Take Over ถ้า `money มากกว่าหรือเท่ากับ offer` 
+### ติดสินบน
+-Easy จ่ายถ้าเงินหลังจ่าย มากกว่าหรือเท่ากับ 100 และ (ตามหลังคู่แข่ง หรือมี Property มากกว่าหรือเท่ากับ 3)               
+-Normal จ่ายถ้าเงินหลังจ่าย มากกว่าหรือเท่ากับ 300                                                          
+-Hard ไม่จ่าย                       
+### ลำดับขาย Property ตอน Bankruptcy
+-Easy ขายที่ดินที่ `rent / price` ต่ำสุดก่อน                                                      
+-Normal ขายที่ดินที่ `rent` ต่ำสุดก่อน                                                               
+-Hard ขายที่ดินที่ `price` ต่ำสุดก่อน            
+
+---
+
+## EasyAI
 
 
-## ข้อควรรู้
+HardAI ใช้เงื่อนไขที่ตรงไปตรงมาที่สุดในการซื้อและ Take Over
 
-- ทั้งสามระดับข้ามการตัดสินใจถ้าที่ดินเป็นของตัวเอง (Easy/Normal) หรือช่องที่ยืนอยู่ไม่ใช่ที่ดิน
-- `Game.buy()` และ `Game.takeOver()` ตรวจข้อจำกัดกลาง (`MAX_PROPERTIES`, `MAX_DIRECT_PURCHASES`, `TAKEOVER_LIMIT`) อีกชั้น ต่อให้ AI ตัดสินใจ "ซื้อ" ก็อาจถูกปฏิเสธ
-- `Game.land()` เรียก `nextTurn()` เองก่อนที่ `resolve()` จะตัดสินใจซื้อ แต่ `buy()` ทำงานกับ `player` ที่ส่งเข้าไปโดยตรง จึงไม่กระทบผล
+### Buy
 
-## เพิ่มบอทระดับใหม่
+ถ้า:
 
-1. สร้าง `src/ai/XxxAI.ts` ตาม pattern ข้างบน
-2. เพิ่มค่า `PlayerKind` ใน `src/game/Types.ts`
-3. ลงทะเบียนตอนสร้างผู้เล่น (ดู `main.ts` / `App.ts`) — หมายเหตุ: `Game` บังคับผู้เล่น 4 คนพอดี ต้องแก้ด้วยถ้าจะเพิ่มจำนวน
+```text
+money มากกว่าหรือเท่ากับ property.price
+```
 
+ก็ซื้อทันที
+
+ไม่มีการตรวจ ROI, Rent หรือเงินสำรองหลังซื้อใน AI เพราะ Hard มันจะเป็นตัวที่กล้าซื้อที่สุด
+
+### Take Over
+
+คำนวณ:
+
+```text
+offer = property.price x TAKEOVER_MULTIPLIER
+```
+
+ถ้า:
+
+```text
+money มากกว่าหรือเท่ากับ offer
+```
+
+ก็ Take Over ไปเลย
+
+### Jail Bail
+
+`decideJail()` คืนค่า `false` เสมอ ดังนั้น HardAI จะไม่จ่าย Jail Bail เพราะมันเปลืองตัง
+
+### Sell Priority
+
+เรียง Property จากราคาต่ำไปสูง
+
+ดังนั้น Property ที่ราคาถูกกว่าจะถูกขายก่อน
+
+---
+
+## NormalAI
+
+NormalAI ใช้กฎที่เซ้ตค่าไว้โดยตรง โดยไม่คำนวณ ROI (Return on Investment) หรือเปรียบเทียบเงินกับคู่แข่ง
+
+### ซื้อที่ดิน
+
+ต้องผ่านเงื่อนไขตามนีั้:
+
+* เงินหลังซื้อ มากกว่าหรือเท่ากับ `150`
+* `rent มากกว่าหรือเท่ากับ 30`
+* จำนวน Property ยังน้อยกว่า `MAX_PROPERTIES`
+
+### Take Over
+
+ใช้เงื่อนไขเดียวกับการซื้อ Property แต่คำนวณเงินจากราคา Take Over:
+
+* เงินหลัง Take Over มากกว่าหรือเท่ากับ `150`
+* `rent มากกว่าหรือเท่ากับ 30`
+* จำนวน Property ยังน้อยกว่า `MAX_PROPERTIES`
+
+### Jail Baribe
+
+จ่ายสินบน เมื่อเงินหลังจ่ายเหลืออย่างน้อย `300`
+
+### Sell Priority
+
+เรียง Property จาก `rent` ต่ำไปสูง
+
+ดังนั้น Property ที่มี Rent ต่ำกว่าจะถูกขายก่อน
+
+---
+
+## HardAI
+
+HardAI ใช้การประเมิน ROI (Return on Investment) และสถานะทางการเงินของตัวเองในการตัดสินใจ
+
+### ซื้อที่ดิน
+
+คำนวณ ROI:
+
+```text
+ROI = rent x 4 - price x 0.25
+```
+
+จากนั้นเปรียบเทียบกับ ROI threshold (Threshold = ค่าขีดจำกัด / ค่าเกณฑ์)
+
+* ถ้านำคู่แข่ง อยู่ ROI ต้องมากกว่า `0`
+* ถ้าตามคู่แข่ง อยู่ ROI ต้องมากกว่า `-20`
+
+และ หลังซื้อก็จะต้องเหลือเงินอย่างน้อย `150`
+
+### Take Over
+
+Ai มันจะ Take Over เมื่อ:
+
+* AI ตามหลังคู่แข่งที่รวยที่สุด
+* ROI ผ่าน threshold
+* เงินหลัง Take Over เหลืออย่างน้อย `150`
+
+### Jail Bribe
+
+จะติดสินบนเมื่อ:
+
+* เงินหลังจ่ายเหลืออย่างน้อย `100`
+* และเข้าเงื่อนไขอย่างใดอย่างหนึ่ง:
+
+  * ตามหลังคู่แข่งที่รวยที่สุด
+  * มี Property อย่างน้อย `3` ที่
+
+### Sell Priority
+
+เรียง Property ตาม:
+
+```text
+rent / price
+```
+
+จากค่าต่ำไปสูง ดังนั้นตัว Property ที่มีค่า `rent / price` ต่ำกว่าจะถูกขายก่อน
+
+### ความหมายของ "ตามหลัง"
+
+`isBehindRichestOpponent()` จะนำเงินของผู้เล่นที่ยังไม่ Bankrupt มาเทียบ
+
+```text
+AI money < เงินของคู่แข่งที่รวยที่สุด
+```
+
+ถ้าเป็นจริงถือว่า AI มัน "ตามหลัง"
+
+---
+
+# ถ้าต้องการแก้ AI Action
+
+| ต้องการแก้                    | ไฟล์          | ส่วนที่ต้องดู         |
+| ----------------------------- | ------------- | --------------------- |
+| เงื่อนไข Buy ของ Easy         | `EasyAI.ts`   | `resolve()`           |
+| ROI ของ Easy                  | `EasyAI.ts`   | `roi`, ROI threshold  |
+| เงื่อนไข Take Over ของ Easy   | `EasyAI.ts`   | `resolve()`           |
+| เงื่อนไข Jail ของ Easy        | `EasyAI.ts`   | `decideJail()`        |
+| ลำดับขายของ Easy              | `EasyAI.ts`   | `sellPriority`        |
+| เงื่อนไข Buy ของ Normal       | `NormalAI.ts` | `resolve()`           |
+| Rent ขั้นต่ำของ Normal        | `NormalAI.ts` | `GOOD_RENT_THRESHOLD` |
+| เงื่อนไข Take Over ของ Normal | `NormalAI.ts` | `resolve()`           |
+| เงื่อนไข Jail ของ Normal      | `NormalAI.ts` | `decideJail()`        |
+| ลำดับขายของ Normal            | `NormalAI.ts` | `sellPriority`        |
+| เงื่อนไข Buy ของ Hard         | `HardAI.ts`   | `resolve()`           |
+| เงื่อนไข Take Over ของ Hard   | `HardAI.ts`   | `resolve()`           |
+| เงื่อนไข Jail ของ Hard        | `HardAI.ts`   | `decideJail()`        |
+| ลำดับขายของ Hard              | `HardAI.ts`   | `sellPriority`        |
+| ราคา Take Over                | `Game.ts`     | `TAKEOVER_MULTIPLIER` |
+| จำนวน Property สูงสุด         | `Game.ts`     | `MAX_PROPERTIES`      |
+| จำนวน Take Over สูงสุด        | `Game.ts`     | `TAKEOVER_LIMIT`      |
+| การซื้อจริง                   | `Game.ts`     | `buy()`               |
+| การ Take Over จริง            | `Game.ts`     | `takeOver()`          |
+
+## Known Limitations
+
+AI เป็นผู้ **ตัดสินใจ** ว่าจะทำ Action หรือไม่ แต่การดำเนิน Action จริงอยู่ใน `Game`
+
+ดังนั้น:
+
+```text
+AI
+ ↓
+ตัดสินใจ Buy / Take Over
+ ↓
+Game.buy() / Game.takeOver()
+ ↓
+Game ตรวจสอบกฎของเกมอีกครั้งด้วย
+```
+
+ต่อให้ AI ตัดสินใจซื้อได้ `Game` ก็ยังสามารถปฏิเสธ Action ได้ถ้ามันไม่ผ่านข้อจำกัดของเกม เช่น `MAX_PROPERTIES`, `MAX_DIRECT_PURCHASES` หรือ `TAKEOVER_LIMIT`
+
+## ถ้าอยากเพิ่ม AI ระดับใหม่
+
+1. สร้าง `src/ai/XxxAI.ts` ใช้โครงสร้างของ AI ตามอันเดิม
+2. กำหนด `sellPriority`, `decideJail`, `move()` และ `resolve()` ให้ตัวใหม่
+3. เพิ่มค่า `PlayerKind` ใน `src/game/Types.ts`
+4. ไปลงทะเบียน AI ตอนสร้างผู้เล่นใน `main.ts` / `App.ts`
+5. หากจำนวนผู้เล่นเปลี่ยน ต้องตรวจสอบข้อจำกัดจำนวนผู้เล่นของ `Game` ด้วย
