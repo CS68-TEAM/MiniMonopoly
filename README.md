@@ -219,6 +219,7 @@ MiniMonopoly/
 │   │   ├── Logo.ts
 │   │   ├── PlayerView.ts
 │   │   └── PropertyInfo.ts
+│   │   └── WinnerView.ts
 │   │
 │   └── utils/
 │       └── SoundManager.ts
