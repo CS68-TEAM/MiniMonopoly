@@ -8,7 +8,6 @@ bun run test
 
 ไฟล์เทส : `tests/game_test_full.test.ts`
 
-> TODO: เพิ่มรายการว่าเทสครอบคลุมอะไรบ้าง (เช่น จับคู่กับ FR-x ใน [requirements.md](requirements.md))
 
 ## Test Mode (สำหรับนักพัฒนา)
 
