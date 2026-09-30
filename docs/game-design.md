@@ -1,4 +1,4 @@
-# Game Design / Spec
+# Game Design
 
 ## เป้าหมายเกม
 

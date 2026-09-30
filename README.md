@@ -22,15 +22,6 @@ bun run start
 ```
 
 ---
-
-## How to Test
-ใช้คำสั่งสำหรับเทสไฟล์เกม
-
-```bash
-bun run test
-``` 
-
----
 ## Game Overview
 
 - ผู้เล่น 1 คน vs บอท 3 ตัว ที่มีระดับความยากต่างกัน (Easy / Normal / Hard) ปรากฏพร้อมกันในเกมเดียว
@@ -138,13 +129,13 @@ bun run test
 หรือ จ่ายเงินประกันตัว $250 จะสามารถเล่นต่อในเทิร์นถัดไป โดยไม่ต้องติดคุก
 ```
 
- ### ☠️ ช่อง Go Jail
+### ☠️ ช่อง Go Jail
 ```
 หากผู้เล่นเหยียบช่อง "ไปคุก" จะกลับไปที่ช่อง "คุก" และติดคุกทันที และเงื่อนไขเหมือนกันกับข้างบน
 ```
 
 ---
->
+
 ## เมื่อเกิดเงินไม่พอจ่าย 💸
 ### ♟️ Player
 ```
@@ -162,85 +153,18 @@ bun run test
 เกมจะเซฟอัตโนมัติทุกครั้งที่จบเทิร์น ลงไฟล์ `save.json` ในโฟลเดอร์เดียวกัน เปิดเกมใหม่แล้วเลือก Resume 
 กด `2`เพื่อเล่นต่อจากเดิมได้เลย ไม่ว่าจะหยุดตอนใครเป็นเทิร์นก็ตาม ระบบจะคืนตาให้ผู้เล่นเสมอ
 
----
-## Developer Tools ( Test Mode )
+## Documentation
  
-สำหรับคนที่อยากเทสเกมเร็วๆ โดยไม่ต้องรอทอยลูกเต๋า
- 
-| ปุ่ม | ทำอะไร |
+| เอกสาร | เนื้อหา |
 |---|---|
-| `Ctrl+L` | เปิด/ปิด Test Mode - ตอนเปิด ทุกคนจะมีเงิน $9,999 และจะ **ปิดการเซฟอัตโนมัติชั่วคราว** เพื่อไม่ให้ข้อมูลไปทับเซฟจริง |
-| `Ctrl+G` | ( ต้องเปิด Test Mode ก่อน ) เลือกว่าตัวเองไปช่องไหนก็ได้บนกระดาน |
+| [docs/requirements.md](docs/requirements.md) | ระบบต้องทำอะไรได้ (FR / NFR) |
+| [docs/spec/](docs/spec.md) | กติกา ค่าคงที่ บอร์ด คุก หนี้ takeover Chance (แยกไฟล์ตามหัวข้อ) |
+| [docs/ai-actions.md](docs/ai-actions.md) | ตรรกะตัดสินใจของบอทแต่ละระดับ |
+| [docs/architecture.md](docs/architecture.md) | โครงสร้างโมดูล, diagram |
+| [docs/game-design.md](docs/game-design.md) | วิธีการออกแบบเกม |
+| [docs/code-map.md](docs/code-map.md) | อยากแก้อะไรให้ไปไฟล์ไหน |
+| [docs/testing.md](docs/testing.md) | วิธีรันเทส และ Test Mode |
 
----
-
-## Architecture
-
-```
-MiniMonopoly/
-│
-├── assets/
-│   ├── 1.wav
-│   ├── 2.wav
-│   ├── 3.wav
-│   ├── 4.wav
-│   ├── 5.wav
-│   ├── 6.wav
-│   ├── buy.wav
-│   ├── chance.wav
-│   ├── diceroll.wav
-│   ├── jail.wav
-│   ├── lost.wav
-│   ├── move.wav
-│   ├── noprop.wav
-│   ├── payrent.wav
-│   ├── receivedmoney.wav
-│   ├── round.wav
-│   ├── sadjung.wav
-│   ├── start.wav
-│   ├── takeover.wav
-│   ├── win.wav
-│   └── yourturn.wav
-│
-├── src/
-│   ├── main.ts
-│   ├── save.ts
-│   │
-│   ├── ai/
-│   │   ├── EasyAI.ts
-│   │   ├── NormalAI.ts
-│   │   └── HardAI.ts
-│   │
-│   ├── game/
-│   │   ├── Board.ts
-│   │   ├── Chance.ts
-│   │   ├── Game.ts
-│   │   ├── Player.ts
-│   │   ├── Property.ts
-│   │   └── Types.ts
-│   │
-│   ├── ui/
-│   │   ├── ActionMenu.ts
-│   │   ├── App.ts
-│   │   ├── Board32.ts
-│   │   ├── BoardView.ts
-│   │   ├── DiceView.ts
-│   │   ├── GameLog.ts
-│   │   ├── Logo.ts
-│   │   ├── PlayerView.ts
-│   │   ├── PropertyInfo.ts
-│   │   └── WinnerView.ts
-│   │
-│   └── utils/
-│       └── SoundManager.ts
-│
-├── tests/
-│   └── game_test_full.test.ts
-│
-├── .gitignore
-├── package.json
-└── README.md
-```
 ---
 
 ## Known Limitations
