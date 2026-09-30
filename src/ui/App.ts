@@ -1,24 +1,29 @@
 import blessed from "blessed";
 import { execSync } from "child_process";
-import { Game, movePosition, TAKEOVER_MULTIPLIER, SELL_RATE, JAIL_BAIL_AMOUNT } from "../game/Game";
 import { Player } from "../game/Player";
-import { ChanceCard, SaveData, SavedPlayerData } from "../game/Types";
+
 import { EasyAI } from "../ai/EasyAI";
 import { NormalAI } from "../ai/NormalAI";
 import { HardAI } from "../ai/HardAI";
+
 import { BoardView } from "./BoardView";
 import { PlayerView } from "./PlayerView";
 import { GameLog } from "./GameLog";
 import { ActionMenu } from "./ActionMenu";
 import { DiceView } from "./DiceView";
-import { PropertyInfo } from "./PropertyInfo";
 import { Property } from "../game/Property";
+import { PropertyInfo } from "./PropertyInfo";
 import { writeSave, readSave } from "../save";
+import { ChanceCard, SaveData, SavedPlayerData } from "../game/Types";
+import { playSound, SOUNDS, closeSoundManager } from "../utils/SoundManager";
+import { buildWinnerContentLines, buildWinnerFooterContent } from "./WinnerView";
+import { Game, movePosition, TAKEOVER_MULTIPLIER, SELL_RATE, JAIL_BAIL_AMOUNT } from "../game/Game";
 
 const SAVE_FILE = "save.json";
-const MOVE_STEP_DELAY_MS = 200;
-const PAUSE_AFTER_DICE_MS = 300;
+const MOVE_STEP_DELAY_MS = 250;
+const PAUSE_AFTER_DICE_MS = 400;
 const AI_TURN_DELAY_MS = 600;
+const TEST_MONEY = 9999;
 
 interface PopupOptions {
     width: string;
@@ -40,6 +45,9 @@ export class App {
     private ais!: (EasyAI | NormalAI | HardAI)[];
     private busy = false;
     private popupWaits: Promise<void>[] = [];
+    private testMode = false;
+    private keysBound = false;
+    private readonly moneyBackup = new Map<string, number>();
 
     constructor() {
         App.resizeConsole(195, 48);
@@ -84,20 +92,7 @@ export class App {
         menuLines.push("");
         menuLines.push("{red-fg}{bold}Q{/bold} Quit{/red-fg}");
 
-        const menuBox = blessed.box({
-            top: "center",
-            left: "center",
-            width: 54,
-            height: 15,
-            border: { type: "line" },
-            label: " Mini Monopoly ",
-            tags: true,
-            align: "left" as const,
-            valign: "middle" as const,
-            padding: { left: 3, right: 2, top: 0, bottom: 0 },
-            style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } },
-            content: menuLines.join("\n"),
-        });
+        const menuBox = blessed.box({ top: "center", left: "center", width: 54, height: 15, border: { type: "line" }, label: " Mini Monopoly ", tags: true, align: "left" as const, valign: "middle" as const, padding: { left: 3, right: 2, top: 0, bottom: 0 }, style: { border: { fg: "cyan" }, label: { fg: "cyan", bold: true } }, content: menuLines.join("\n") });
         this.screen.append(menuBox);
         this.screen.render();
 
@@ -115,7 +110,7 @@ export class App {
             this.screen.onceKey("2", resumeGame);
             this.screen.onceKey("r", resumeGame);
         }
-        this.screen.key(["q", "C-c"], () => process.exit(0));
+        this.screen.key(["q", "C-c"], () => { closeSoundManager(); process.exit(0); });
     }
 
     private loadGame(save: SaveData): void {
@@ -167,9 +162,13 @@ export class App {
     private startGame(): void {
         const players = [
             new Player("human", "Player", "Human"),
-            new Player("easy", "Bot ( Easy )", "AI Easy"),
-            new Player("normal", "Bot ( Normal )", "AI Normal"),
-            new Player("hard", "Bot ( Hard )", "AI Hard"),
+            new Player("easy", "Ethan", "AI Easy"),
+            new Player("normal", "Norman", "AI Normal"),
+            new Player("hard", "Henry", "AI Hard"),
+
+            // new Player("easy", "Bot ( Easy )", "AI Easy"),
+            // new Player("normal", "Bot ( Normal )", "AI Normal"),
+            // new Player("hard", "Bot ( Hard )", "AI Hard"),
         ];
 
         this.game = new Game(players, message => this.gameLog.add(message));
@@ -180,6 +179,8 @@ export class App {
             new HardAI(players[3]!),
         ];
 
+        playSound(SOUNDS.gameStart);
+
         this.layout();
         this.bindKeys();
         this.render();
@@ -188,6 +189,9 @@ export class App {
 
     private layout(): void {
         const MENU_HEIGHT = 3;
+        this.testMode = false;
+        this.moneyBackup.clear();
+        this.actionMenu.setTestMode(false);
         
         this.boardView.box.top = 0;
         this.boardView.box.left = 0;
@@ -237,7 +241,13 @@ export class App {
     }
 
     private bindKeys(): void {
-        this.screen.key(["q", "C-c"], () => process.exit(0));
+        if (this.keysBound) return;
+        this.keysBound = true;
+
+        this.screen.key(["C-l"], () => this.toggleTestMode());
+        this.screen.key(["C-g"], () => { void this.doTeleport(); });
+
+        this.screen.key(["q", "C-c"], () => { closeSoundManager(); process.exit(0); });
         this.screen.key(["enter", "r"], () => { void this.doRoll(); });
 
         this.screen.key(["b"], () => {
@@ -277,16 +287,21 @@ export class App {
         const fromPos = player.position;
 
         let bailChoice: boolean | undefined;
-        if (player.status === "jailed") {
+        if (player.status === "jailed" && !player.stayinjailed) {
             bailChoice = await this.showJailPrompt(player);
         }
 
         const dice = this.game.move(player, bailChoice);
-        await this.diceView.animateRoll(dice || 1, () => this.screen.render());
         if (dice > 0) {
+            await this.diceView.animateRoll(dice, () => this.screen.render());
+            playSound(SOUNDS.dice(dice));
             await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
             await this.animateMovement(player, fromPos, dice);
         }
+        await this.resolveTurn();
+    }
+
+    private async resolveTurn(): Promise<void> {
         this.game.land();
         await this.waitForPopups();
         this.render();
@@ -317,6 +332,7 @@ export class App {
 
             if (aiDice > 0) {
                 await this.diceView.animateRoll(aiDice, () => this.screen.render());
+                playSound(SOUNDS.dice(aiDice));
                 await new Promise(resolve => setTimeout(resolve, PAUSE_AFTER_DICE_MS));
                 await this.animateMovement(aiPlayer, aiFromPos, aiDice);
                 currentAi.resolve(this.game);
@@ -326,7 +342,87 @@ export class App {
             await this.autoSave();
         }
 
+        if (this.game.winner) {
+            await this.showWinnerScreen(this.game.winner);
+            const save = await readSave(SAVE_FILE).catch(() => null);
+            this.showStartMenu(save);
+        }
+
         this.busy = false;
+    }
+
+    private toggleTestMode(): void {
+        if (this.busy || !this.game || this.game.status !== "playing") return;
+        this.testMode = !this.testMode;
+
+        if (this.testMode) {
+            this.moneyBackup.clear();
+            for (const p of this.game.players) {
+                if (p.status === "bankrupt") continue;
+                this.moneyBackup.set(p.id, p.money);
+                p.money = TEST_MONEY;
+            }
+            this.gameLog.add(`[TEST MODE] ON - everyone has $${TEST_MONEY.toLocaleString()} (Ctrl+G = go to tile)`);
+        } else {
+            for (const p of this.game.players) {
+                const prev = this.moneyBackup.get(p.id);
+                if (prev !== undefined && p.status !== "bankrupt") p.money = prev;
+            }
+            this.moneyBackup.clear();
+            this.gameLog.add("[TEST MODE] OFF - money restored");
+        }
+
+        this.actionMenu.setTestMode(this.testMode);
+        this.render();
+    }
+
+    private async doTeleport(): Promise<void> {
+        if (!this.testMode || this.busy || this.game.status !== "playing") return;
+        const player = this.game.currentPlayer;
+        if (player.id !== "human") return;
+        if (player.status === "jailed") {
+            this.gameLog.add("[TEST MODE] Can't teleport while in Jail - roll first.");
+            this.screen.render();
+            return;
+        }
+
+        this.busy = true;
+        const target = await this.showTeleportPrompt(player.position);
+        if (target === null) {
+            this.busy = false;
+            this.render();
+            return;
+        }
+
+        this.game.debugTeleport(player, target);
+        this.render();
+        await this.resolveTurn();
+    }
+
+    private showTeleportPrompt(currentPosition: number): Promise<number | null> {
+        return new Promise(resolve => {
+            const items = this.game.board.tiles.map(tile => {
+                const p = tile.property;
+                const extra = p ? `  $${p.price}${p.owner ? `  (${p.owner.name})` : ""}` : "";
+                return `#${String(tile.index).padStart(2, "0")}  ${tile.name}${extra}`;
+            });
+
+            const list = blessed.list({ top: "center", left: "center", width: "40%", height: "80%", border: { type: "line" }, label: " [TEST] Go to tile  (Enter = go, Esc = cancel) ", tags: false, keys: true, mouse: true, scrollbar: { ch: " " }, style: { border: { fg: "red" }, label: { fg: "red", bold: true }, selected: { bg: "red", fg: "white", bold: true } } as any, items: items as any });
+
+            const finish = (result: number | null) => {
+                this.screen.remove(list);
+                this.screen.render();
+                resolve(result);
+            };
+
+            this.screen.append(list);
+            list.select(currentPosition);
+            list.focus();
+            this.screen.render();
+
+            list.on("select", (_item: unknown, index: number) => finish(index));
+            list.key(["escape"], () => finish(null));
+        });
     }
 
     private async animateMovement(player: Player, fromPos: number, steps: number): Promise<void> {
@@ -336,11 +432,13 @@ export class App {
             this.boardView.render(this.game.board, this.game.players, { [player.id]: intermediatePos });
             this.playerView.render(this.game.players, this.game.currentPlayer.id);
             this.screen.render();
+            playSound(SOUNDS.move)
             await new Promise(resolve => setTimeout(resolve, MOVE_STEP_DELAY_MS));
         }
     }
 
     private async autoSave(): Promise<void> {
+        if (this.testMode) return;
         await writeSave(SAVE_FILE, this.buildSaveData()).catch(() => { });
     }
 
@@ -443,6 +541,42 @@ export class App {
         });
     }
 
+    private hideGameViews(): void {
+        for (const box of [this.boardView.box, this.playerView.box, this.gameLog.box, this.actionMenu.box, this.diceView.box, this.propertyInfo.box]) {
+            this.screen.remove(box);
+        }
+    }
+
+    private showWinnerScreen(winner: Player): Promise<void> {
+        return new Promise(resolve => {
+            this.hideGameViews();
+
+            const main = blessed.box({
+                top: 0, left: 0, width: "100%", height: "100%-3",
+                tags: true, align: "center" as const, valign: "middle" as const,
+                content: buildWinnerContentLines(winner).join("\n"),
+            });
+
+            const footer = blessed.box({
+                bottom: 0, left: 0, width: "100%", height: 3,
+                tags: true, align: "center" as const, valign: "middle" as const,
+                content: buildWinnerFooterContent(),
+            });
+
+            this.screen.append(main);
+            this.screen.append(footer);
+            this.screen.render();
+
+            const finish = () => {
+                this.screen.remove(main);
+                this.screen.remove(footer);
+                this.screen.render();
+                resolve();
+            };
+            this.screen.onceKey("enter", finish);
+        });
+    }
+
     private async waitForPopups(): Promise<void> {
         const waits = this.popupWaits;
         this.popupWaits = [];
@@ -516,5 +650,4 @@ export class App {
         };
     }
 }
-
 

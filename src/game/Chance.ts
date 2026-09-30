@@ -15,7 +15,7 @@ const CHANCE_EVENTS: WeightedChanceEvent[] = [
         },
     },
     {
-        probability: 0.10,
+        probability: 0.12,
         card: {
             title: "Lucky Day", description: "You found $100 bill what a lucky day.", apply: (p) => {
                 p.addMoney(100); return `${p.name} received $100.`;
@@ -23,15 +23,15 @@ const CHANCE_EVENTS: WeightedChanceEvent[] = [
         },
     },
     {
-        probability: 0.10,
+        probability: 0.13,
         card: {
-            title: "Medical Expenses", description: "A surprise trip to the doctor leaves your wallet feeling lighter.", apply: (p) => {
-                p.removeMoney(100); return `${p.name} pay $100.`;
+            title: "Medical Expenses", description: "A surprise trip to the doctor leaves your wallet feeling lighter.", apply: (p, c) => {
+                c.payTax(p,100); return `${p.name} pay $100.`;
             }
         },
     },
     {
-        probability: 0.10,
+        probability: 0.05,
         card: {
             title: "Go to Start", description: "You've had enough adventure. Head back home!.", apply: (p ,c) => {
                 c.move(p, 32 - p.position); return `${p.name} moved to Start.`;
@@ -39,18 +39,18 @@ const CHANCE_EVENTS: WeightedChanceEvent[] = [
         },
     },
     {
-        probability: 0.10,
+        probability: 0.15,
         card: {
-            title: "Speed Ticket", description: "You were going a little too fast. The police weren't impressed.", apply: (p) => {
-                p.removeMoney(50); return `${p.name} Pay $50.`;
+            title: "Speed Ticket", description: "You were going a little too fast. The police weren't impressed.", apply: (p, c) => {
+                c.payTax(p,50); return `${p.name} Pay $50.`;
             }
         },
     },
     {
         probability: 0.10,
         card: {
-            title: "Property Inspection", description: "The inspector has arrived. Apparently, owning property isn't free.", apply: (p) => {
-                p.removeMoney((p.properties.length + 1) * 50); return `${p.name} pay $${(p.properties.length + 1) * 50} for every property he own.`;
+            title: "Property Inspection", description: "The inspector has arrived. Apparently, owning property isn't free.", apply: (p, c) => {
+                c.payTax(p,(p.properties.length + 1) * 50); return `${p.name} pay $${(p.properties.length + 1) * 50} for every property he own.`;
             }
         },
     },
@@ -72,7 +72,7 @@ const CHANCE_EVENTS: WeightedChanceEvent[] = [
         },
     },
     {
-        probability: 0.06,
+        probability: 0.05,
         card: {
             title: "Lottery", description: "You won the lottery!.", apply: (p) => {
                 p.addMoney(500); return `${p.name} won the lottery and received $500.`;
@@ -80,7 +80,7 @@ const CHANCE_EVENTS: WeightedChanceEvent[] = [
         },
     },
     {
-        probability: 0.07,
+        probability: 0.10,
         card: {
             title: "Backward -3", description: "Sometimes the best way forward is to take a step back.", apply: (p, c) => {
                 c.move(p, -3); return `${p.name} moved backward 3 spaces.`;

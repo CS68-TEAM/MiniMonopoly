@@ -4,12 +4,12 @@ const LOG_CATEGORIES: { match: RegExp; icon: string; color: string }[] = [
     { match: /wins the game/i, icon: "★", color: "yellow" },
     { match: /is BANKRUPT/i, icon: "X", color: "red" },
     { match: /rent/i, icon: "$", color: "yellow" },
-    { match: /tax/i, icon: "%", color: "magenta" },
-    { match: /bought/i, icon: ">", color: "green" },
+    { match: /tax/i, icon: "-", color: "magenta" },
+    { match: /bought/i, icon: "-", color: "green" },
     { match: /sold/i, icon: "<", color: "cyan" },
-    { match: /sent to Jail|leaves Jail/i, icon: "!", color: "red" },
+    { match: /sent to Jail|leaves Jail/i, icon: "-", color: "red" },
     { match: /Chance:/i, icon: "?", color: "blue" },
-    { match: /rolled/i, icon: "*", color: "cyan" },
+    { match: /rolled/i, icon: "-", color: "cyan" },
     { match: /passed START/i, icon: "+", color: "green" },
 ];
 const DEFAULT_LOG_CATEGORY = { icon: "-", color: "white" };
@@ -18,22 +18,7 @@ const MAX_LOG_LINES = 80;
 const LOG_ICON_PREFIX_WIDTH = 4;
 
 export class GameLog {
-    public readonly box = blessed.box({
-        label: " Game Logs ",
-        border: { type: "line" },
-        style: {
-            border: { fg: "white" },
-            label: { fg: "white", bold: true },
-        },
-        tags: true,
-        wrap: false,
-        scrollable: true,
-        alwaysScroll: true,
-        keys: true,
-        mouse: true,
-        padding: { left: 1, right: 1 },
-    });
-
+    public readonly box = blessed.box({ label: " Game Logs ", border: { type: "line" }, style: { border: { fg: "white" }, label: { fg: "white", bold: true } }, tags: true, wrap: false, scrollable: true, alwaysScroll: true, keys: true, mouse: true, padding: { left: 1, right: 1 },});
     private readonly logLines: string[] = [];
 
     constructor() {
